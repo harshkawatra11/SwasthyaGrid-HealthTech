@@ -20,9 +20,11 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt -e .[dev] 2>/dev/null || pip install -r requirements.txt ruff pytest pytest-cov httpx
       - name: Lint (Ruff)
-        run: ruff check app
+        run: ruff check .
       - name: Test (Pytest)
-        run: pytest --cov=app || true
+        run: pytest -q --cov=app
+        env:
+          DATA_SOURCE: seed
 
   frontend-ci:
     runs-on: ubuntu-latest
@@ -37,6 +39,9 @@ jobs:
           cache: "npm"
           cache-dependency-path: frontend/package-lock.json
       - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run test
       - run: npm run build
 
   # Deploy is manual-gated: requires GCP_PROJECT_ID and GCP_SA_KEY secrets to be

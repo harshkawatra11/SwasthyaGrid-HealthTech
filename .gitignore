@@ -37,3 +37,9 @@ mentor-repo-reference/
 ai-healthcare-crm/
 
 .vercel
+
+# Runtime state and test output
+backend/.runtime/
+backend/.runtime-b2/
+frontend/test-results/
+frontend/playwright-report/

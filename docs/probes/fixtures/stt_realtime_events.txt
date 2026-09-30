@@ -1,0 +1,10 @@
+{"event": "session.begin", "request_id": "20260926_d40d5b78-2358-4413-a11f-43e1656a95f8", "config": {"model": "saaras:v3-realtime", "language_code": "auto", "encoding": "linear16", "sample_rate": 16000, "stream_type": "fast", "mode": "transcribe", "prompt": null, "keyterms": null, "turn_detection": "vad", "threshold": 0.3, "prefix_padding_ms": 300, "silence_duration_ms": 500, "min_speech_duration_ms": 250, "return_timestamps": false}}
+{"event": "vad.speech_start", "utterance_idx": 0, "confidence": 0.96}
+{"event": "transcript.partial", "utterance_idx": 0, "text": "", "language": "en-IN"}
+{"event": "transcript.partial", "utterance_idx": 0, "text": "Qu", "language": "en-IN"}
+{"event": "transcript.partial", "utterance_idx": 0, "text": "Quota", "language": "en-IN"}
+{"event": "transcript.partial", "utterance_idx": 0, "text": "Quota,", "language": "en-IN"}
+{"event": "transcript.partial", "utterance_idx": 0, "text": "Quota,", "language": "en-IN"}
+{"event": "transcript.partial", "utterance_idx": 0, "text": "Quota", "language": "en-IN"}
+{"event": "transcript.partial", "utterance_idx": 0, "text": "Quota,", "language": "en-IN"}
+{"event": "transcript.partial", "utterance_idx": 0, "text": "Quota,", "language": "en-IN"}

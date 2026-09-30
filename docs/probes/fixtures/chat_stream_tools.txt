@@ -1,0 +1,9 @@
+data: {"id":"20260926_4a797e44-c6de-477d-9dcf-e7802b6a7acb","choices":[{"delta":{"content":"","function_call":null,"refusal":null,"role":"assistant","tool_calls":null},"finish_reason":null,"index":0,"logprobs":null}],"created":1790420006,"model":"sarvam-105b-conversations","object":"chat.completion.chunk","service_tier":null,"system_fingerprint":null,"usage":null,"prompt_token_ids":null,"prompt_text":null}
+
+data: {"id":"20260926_4a797e44-c6de-477d-9dcf-e7802b6a7acb","choices":[{"delta":{"content":null,"function_call":null,"refusal":null,"role":null,"tool_calls":[{"index":0,"id":"chatcmpl-tool-ac7721526dbb9bd1","function":{"arguments":"{}","name":"list_districts"},"type":"function"}]},"finish_reason":null,"index":0,"logprobs":null,"token_ids":null}],"created":1790420006,"model":"sarvam-105b-conversations","object":"chat.completion.chunk","service_tier":null,"system_fingerprint":null,"usage":null}
+
+data: {"id":"20260926_4a797e44-c6de-477d-9dcf-e7802b6a7acb","choices":[{"delta":{"content":null,"function_call":null,"refusal":null,"role":null,"tool_calls":null},"finish_reason":"tool_calls","index":0,"logprobs":null,"stop_reason":null,"token_ids":null}],"created":1790420006,"model":"sarvam-105b-conversations","object":"chat.completion.chunk","service_tier":null,"system_fingerprint":null,"usage":null}
+
+data: {"id":"20260926_4a797e44-c6de-477d-9dcf-e7802b6a7acb","choices":[],"created":1790420006,"model":"sarvam-105b-conversations","object":"chat.completion.chunk","service_tier":null,"system_fingerprint":"vllm-0.29.1rc1.dev145+gfe61f3317-9c902b0a","usage":{"completion_tokens":8,"prompt_tokens":728,"total_tokens":736,"completion_tokens_details":null,"prompt_tokens_details":null}}
+
+data: [DONE]

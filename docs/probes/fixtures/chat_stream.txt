@@ -1,0 +1,8 @@
+data: {"id":"20260926_d15f4d4e-5ae9-45e3-971a-acd891db2131","choices":[{"delta":{"content":"","function_call":null,"refusal":null,"role":"assistant","tool_calls":null},"finish_reason":null,"index":0,"logprobs":null}],"created":1790420004,"model":"sarvam-105b-conversations","object":"chat.completion.chunk","service_tier":null,"system_fingerprint":null,"usage":null,"prompt_token_ids":null,"prompt_text":null}
+
+data: {"id":"20260926_d15f4d4e-5ae9-45e3-971a-acd891db2131","choices":[{"delta":{"content":"Hello","function_call":null,"refusal":null,"role":null,"tool_calls":null},"finish_reason":null,"index":0,"logprobs":null,"token_ids":null}],"created":1790420004,"model":"sarvam-105b-conversations","object":"chat.completion.chunk","service_tier":null,"system_fingerprint":null,"usage":null}
+
+data: {"id":"20260926_d15f4d4e-5ae9-45e3-971a-acd891db2131","choices":[{"delta":{"content":"!","function_call":null,"refusal":null,"role":null,"tool_calls":null},"finish_reason":"stop","index":0,"logprobs":null,"stop_reason":null,"token_ids":null}],"created":1790420004,"model":"sarvam-105b-conversations","object":"chat.completion.chunk","service_tier":null,"system_fingerprint":null,"usage":null}
+...
+
+data: [DONE]
