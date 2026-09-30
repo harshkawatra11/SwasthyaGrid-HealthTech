@@ -7,9 +7,12 @@ class DistrictService:
         self.repo = repo
         self.forecast = forecast
 
-    def facilities_overview(self) -> list[dict]:
+    def districts_overview(self) -> list[dict]:
+        return self.repo.districts
+
+    def facilities_overview(self, district_id: str | None = None) -> list[dict]:
         out = []
-        for f in self.repo.facilities:
+        for f in self.repo.facilities_in(district_id):
             out.append(
                 {
                     **f,
@@ -33,25 +36,40 @@ class DistrictService:
             ],
         }
 
-    def district_summary(self) -> dict:
-        facilities = self.facilities_overview()
+    def district_summary(self, district_id: str | None = None) -> dict:
+        """With no district_id: a state-level rollup across all five districts.
+
+        With one: the single-district shape the dashboard and the original
+        eight-facility Jaipur Rural demo already expect.
+        """
+        facilities = self.facilities_overview(district_id)
         risk_counts = {"healthy": 0, "monitor": 0, "stress": 0, "critical": 0}
         for f in facilities:
             risk_counts[f["risk_level"]] += 1
+
+        if district_id is not None:
+            return {
+                "district": self.repo.district(district_id),
+                "facilities": facilities,
+                "risk_counts": risk_counts,
+            }
+
         return {
-            "district": self.repo.district,
+            "districts": self.repo.districts,
             "facilities": facilities,
             "risk_counts": risk_counts,
+            "district_count": len(self.repo.districts),
+            "facility_count": len(facilities),
         }
 
-    def performance_scores(self) -> list[dict]:
+    def performance_scores(self, district_id: str | None = None) -> list[dict]:
         """Illustrative composite scorecard per facility.
 
         Overall = average of sub-scores, sub-scores derived from current mock
         signals (inventory health, doctor attendance, diagnostics availability).
         """
         out = []
-        for f in self.repo.facilities:
+        for f in self.repo.facilities_in(district_id):
             med = self.forecast.medicine_forecast(f["id"])
             inventory_score = 100 - sum(30 for m in med if m["risk"] == "high") - sum(
                 15 for m in med if m["risk"] == "medium"
@@ -87,6 +105,7 @@ class DistrictService:
                 {
                     "facility_id": f["id"],
                     "facility_name": f["name"],
+                    "district_id": f["district_id"],
                     "overall": overall,
                     "inventory": inventory_score,
                     "attendance": attendance_score,
@@ -98,8 +117,9 @@ class DistrictService:
         return sorted(out, key=lambda s: s["overall"])
 
     def causal_chain(self, facility_id: str) -> dict:
-        chain = self.repo.causal_chain
-        if chain["facility_id"] == facility_id:
+        district_id = self.repo.district_id_for_facility(facility_id)
+        chain = self.repo.causal_chain_for(district_id)
+        if chain and chain.get("facility_id") == facility_id:
             return chain
         return {
             "facility_id": facility_id,
