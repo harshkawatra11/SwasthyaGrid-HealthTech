@@ -14,7 +14,7 @@ function subscribe(cb: () => void) {
 }
 
 export function ThemeToggle() {
-  const theme = useSyncExternalStore<Theme>(subscribe, readTheme, () => "dark");
+  const theme = useSyncExternalStore<Theme>(subscribe, readTheme, () => "light");
   const next: Theme = theme === "dark" ? "light" : "dark";
   return (
     <button

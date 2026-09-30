@@ -2,11 +2,11 @@ export type Theme = "dark" | "light";
 export const THEME_KEY = "sg-theme";
 
 export function normalizeTheme(v: string | null | undefined): Theme {
-  return v === "light" ? "light" : "dark";
+  return v === "dark" ? "dark" : "light";
 }
 
 export function readTheme(): Theme {
-  if (typeof document === "undefined") return "dark";
+  if (typeof document === "undefined") return "light";
   return normalizeTheme(document.documentElement.getAttribute("data-theme"));
 }
 
@@ -19,4 +19,4 @@ export function applyTheme(t: Theme): void {
   }
 }
 
-export const THEME_INIT_SCRIPT = `(function(){try{var t=localStorage.getItem("${THEME_KEY}");document.documentElement.setAttribute("data-theme",t==="light"?"light":"dark")}catch(e){document.documentElement.setAttribute("data-theme","dark")}})()`;
+export const THEME_INIT_SCRIPT = `(function(){try{var t=localStorage.getItem("${THEME_KEY}");document.documentElement.setAttribute("data-theme",t==="dark"?"dark":"light")}catch(e){document.documentElement.setAttribute("data-theme","light")}})()`;

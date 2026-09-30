@@ -11,5 +11,5 @@ function subscribe(cb: () => void) {
 
 /** The active theme, following the data-theme attribute on <html>. */
 export function useTheme(): Theme {
-  return useSyncExternalStore<Theme>(subscribe, readTheme, () => "dark");
+  return useSyncExternalStore<Theme>(subscribe, readTheme, () => "light");
 }
