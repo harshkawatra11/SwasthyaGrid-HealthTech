@@ -275,6 +275,19 @@ None of the values below are real. Never commit `.env*` files. `backend/.env`, `
 | `SWASTHYAGRID_API_BASE` | `http://127.0.0.1:8080` | Backend base for server-to-server calls |
 | `SWASTHYAGRID_SERVICE_TOKEN` | same as backend `LOGISTICS_SERVICE_TOKEN` | Proof-of-delivery authentication |
 
+## Deploying the backend to Cloud Run (Always Free tier)
+
+The frontend at `swasthyagrid.vercel.app` deploys automatically on every push to `master` through Vercel's own Git integration. The backend deploys to Cloud Run with `backend/scripts/deploy.sh`:
+
+```bash
+cd backend
+GCP_PROJECT_ID=<your project> bash scripts/deploy.sh
+```
+
+The script builds the image with Cloud Build, pushes it to Artifact Registry, and deploys to Cloud Run in `us-central1` with `--min-instances 0 --max-instances 1`, so it never bills outside the Always Free tier limits (2 million requests, 180,000 vCPU-seconds and 360,000 GiB-seconds a month, us-central1/us-east1/us-west1 only). It expects three Secret Manager secrets already created: `gemini-api-key`, `sarvam-api-key`, `logistics-service-token`.
+
+**The trade-off of staying free.** Scale to zero means Cloud Run can recycle the single instance whenever it is idle. Because the logistics simulator's state lives in memory, a cold start resets the scenario to 08:30 IST with a fresh set of shipments, and any open SSE stream or voice WebSocket is dropped when the instance is recycled under it. The dashboard and voice page reconnect automatically. This is a fine trade-off for a demo you drive live; it is not a substitute for a real state store if the backend needs to stay in sync over a long period untouched.
+
 ## Demo script (about four minutes)
 
 At the default 60x clock the full loop fits in roughly four minutes.

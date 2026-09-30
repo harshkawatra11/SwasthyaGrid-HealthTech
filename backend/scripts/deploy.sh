@@ -10,7 +10,7 @@ set -euo pipefail
 : "${GCP_PROJECT_ID:?Set GCP_PROJECT_ID before running this script}"
 REGION="${GCP_REGION:-us-central1}"
 SERVICE="swasthyagrid-api"
-IMAGE="gcr.io/${GCP_PROJECT_ID}/${SERVICE}"
+IMAGE="${REGION}-docker.pkg.dev/${GCP_PROJECT_ID}/swasthyagrid/${SERVICE}"
 
 echo "Building image ${IMAGE}..."
 gcloud builds submit --tag "${IMAGE}" .
