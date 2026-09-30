@@ -1,0 +1,83 @@
+{
+  "_note": "Planning assumptions for the supply chain simulation. Pack and weight figures are illustrative, not procurement data. Packaging adds 1 kg per carton (packaging_kg_per_carton). base_daily_consumption is copied from BASE_DAILY_CONSUMPTION in scripts/generate_districts.py and is used when a delivery creates a stock row a facility did not have before.",
+  "packaging_kg_per_carton": 1.0,
+  "medicines": [
+    {
+      "name": "Paracetamol",
+      "unit": "strip of 10 tablets",
+      "unit_weight_kg": 0.012,
+      "units_per_carton": 500,
+      "cartons_per_pallet": 40,
+      "cold_chain": false,
+      "storage": "Below 25 C",
+      "emergency": false,
+      "base_daily_consumption": 15
+    },
+    {
+      "name": "ORS",
+      "unit": "sachet",
+      "unit_weight_kg": 0.022,
+      "units_per_carton": 400,
+      "cartons_per_pallet": 36,
+      "cold_chain": false,
+      "storage": "Below 30 C",
+      "emergency": false,
+      "base_daily_consumption": 17
+    },
+    {
+      "name": "Anti-Snake Venom (ASV)",
+      "unit": "lyophilised vial",
+      "unit_weight_kg": 0.03,
+      "units_per_carton": 50,
+      "cartons_per_pallet": 60,
+      "cold_chain": false,
+      "storage": "Below 25 C",
+      "emergency": true,
+      "base_daily_consumption": 2
+    },
+    {
+      "name": "Anti-Rabies Vaccine (ARV)",
+      "unit": "vial",
+      "unit_weight_kg": 0.02,
+      "units_per_carton": 100,
+      "cartons_per_pallet": 60,
+      "cold_chain": true,
+      "storage": "2 to 8 C",
+      "emergency": true,
+      "base_daily_consumption": 5
+    },
+    {
+      "name": "Oxytocin",
+      "unit": "ampoule",
+      "unit_weight_kg": 0.008,
+      "units_per_carton": 200,
+      "cartons_per_pallet": 60,
+      "cold_chain": true,
+      "storage": "2 to 8 C",
+      "emergency": true,
+      "base_daily_consumption": 5
+    },
+    {
+      "name": "Adrenaline (Epinephrine)",
+      "unit": "ampoule",
+      "unit_weight_kg": 0.008,
+      "units_per_carton": 200,
+      "cartons_per_pallet": 60,
+      "cold_chain": false,
+      "storage": "Below 25 C",
+      "emergency": true,
+      "base_daily_consumption": 2
+    },
+    {
+      "name": "Tetanus Toxoid (TT)",
+      "unit": "vial",
+      "unit_weight_kg": 0.02,
+      "units_per_carton": 100,
+      "cartons_per_pallet": 60,
+      "cold_chain": true,
+      "storage": "2 to 8 C",
+      "emergency": true,
+      "base_daily_consumption": 7
+    }
+  ]
+}
