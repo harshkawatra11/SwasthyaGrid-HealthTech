@@ -1,0 +1,264 @@
+# Voice agent accuracy eval cases (plan 7.10, B9).
+#
+# Each case is one typed turn sent to a real VoiceSession (real Sarvam chat,
+# real district/forecast/recommendation/logistics/insights services). The
+# runner never hard-codes an expected answer: ground truth for the "grounded"
+# check is computed live, at run time, by calling the same tool function with
+# the arguments the model actually chose.
+#
+# Fields:
+#   id       unique case id
+#   text     the user's typed message (English or Hindi)
+#   tool     expected tool name, or null for a question that needs no tool
+#   entity   optional {kind: district|facility, id: <seed id>} the model's
+#            chosen argument must resolve to (checked with the same
+#            resolvers the tools use, app.tools.resolve)
+#   args     optional {key: [acceptable, values, ...]} the model's tool
+#            arguments are checked against (case-insensitive substring)
+#   checks   which checks to run: tool, entity, grounded, no_tool, ambiguous,
+#            soft_entity (entity check that tolerates "no active shipment"
+#            style live-state misses), args
+#   note     why the case exists, for humans reading a failure list
+
+- id: state_01
+  text: "Give me the state-wide overview across all five districts."
+  tool: get_state_briefing
+  checks: [tool, grounded]
+  note: "state-wide summary tool"
+
+- id: district_01
+  text: "Give me the Kota district briefing."
+  tool: get_district_briefing
+  entity: {kind: district, id: district_kota}
+  checks: [tool, entity, grounded]
+
+- id: district_02
+  text: "What's happening in Jaipur Rural district right now?"
+  tool: get_district_briefing
+  entity: {kind: district, id: district_jaipur_rural}
+  checks: [tool, entity, grounded]
+
+- id: district_03
+  text: "Tell me about Bikaner district."
+  tool: get_district_briefing
+  entity: {kind: district, id: district_bikaner}
+  checks: [tool, entity, grounded]
+  note: "no literal word 'briefing', tests intent mapping"
+
+- id: district_04_hindi
+  text: "जयपुर जिले की पूरी जानकारी दीजिए।"
+  tool: get_district_briefing
+  entity: {kind: district, id: district_jaipur_rural}
+  checks: [tool, entity, grounded]
+  note: "Hindi phrasing, Devanagari district alias"
+
+- id: find_01
+  text: "Find PHC Kota-4 for me."
+  tool: find_facility
+  entity: {kind: facility, id: kota_phc_4}
+  checks: [tool, entity]
+
+- id: find_02
+  text: "Look up Kota ka PHC chaar."
+  tool: [find_facility, get_facility_status]
+  entity: {kind: facility, id: kota_phc_4}
+  checks: [tool, entity]
+  note: "Hindi-English mixed spoken alias, number word chaar=4"
+
+- id: find_03
+  text: "Find rural fourteen in Jaipur Rural district."
+  tool: [find_facility, get_facility_status]
+  entity: {kind: facility, id: phc_18}
+  checks: [tool, entity]
+  note: "PHC Rural-14 spoken as 'rural fourteen'"
+
+- id: find_04_ambiguous
+  text: "Find PHC number 4."
+  tool: find_facility
+  checks: [tool, ambiguous]
+  note: "every district has a PHC ...-4; should surface more than one match, not silently guess"
+
+- id: facility_01
+  text: "What's the status of PHC Kota-4?"
+  tool: get_facility_status
+  entity: {kind: facility, id: kota_phc_4}
+  checks: [tool, entity, grounded]
+
+- id: facility_02
+  text: "How is CHC Bikaner-3 doing?"
+  tool: get_facility_status
+  entity: {kind: facility, id: bikaner_chc_3}
+  checks: [tool, entity, grounded]
+
+- id: facility_03_hindi
+  text: "पीएचसी उदयपुर दो का हाल बताओ।"
+  tool: get_facility_status
+  entity: {kind: facility, id: udaipur_phc_2}
+  checks: [tool, entity, grounded]
+  note: "Hindi, PHC Udaipur-2 spoken as 'PHC Udaipur do'"
+
+- id: facility_04
+  text: "Give me the full status for PHC Alwar-1."
+  tool: get_facility_status
+  entity: {kind: facility, id: alwar_phc_1}
+  checks: [tool, entity, grounded]
+
+- id: facility_05_hindi
+  text: "पीएचसी कोटा दो का हाल क्या है?"
+  tool: get_facility_status
+  entity: {kind: facility, id: kota_phc_2}
+  checks: [tool, entity, grounded]
+  note: "Hindi, PHC Kota-2 spoken as 'PHC Kota do'"
+
+- id: shortage_01
+  text: "What medicines are running low in Kota district?"
+  tool: get_shortages
+  entity: {kind: district, id: district_kota}
+  checks: [tool, entity, grounded]
+
+- id: shortage_02
+  text: "Show me ARV shortages across all districts."
+  tool: get_shortages
+  args: {medicine: ["arv", "anti-rabies"]}
+  checks: [tool, args, grounded]
+
+- id: shortage_03
+  text: "Which facilities are short on ORS?"
+  tool: get_shortages
+  args: {medicine: ["ors"]}
+  checks: [tool, args, grounded]
+
+- id: compare_01
+  text: "Which district has the most stock-outs?"
+  tool: compare_districts
+  args: {metric: ["stockout"]}
+  checks: [tool, args, grounded]
+
+- id: compare_02
+  text: "Rank the districts by risk index."
+  tool: compare_districts
+  args: {metric: ["risk_index", "risk index"]}
+  checks: [tool, args, grounded]
+
+- id: compare_03
+  text: "Which district has the best on-time delivery rate?"
+  tool: compare_districts
+  args: {metric: ["on_time_rate", "on-time", "on time"]}
+  checks: [tool, args, grounded]
+
+- id: compare_04
+  text: "How many critical facilities are there in each district?"
+  tool: compare_districts
+  args: {metric: ["critical_facilities", "critical facilities"]}
+  checks: [tool, args, grounded]
+
+- id: recs_01
+  text: "What are the pending recommendations for Kota district?"
+  tool: get_recommendations
+  entity: {kind: district, id: district_kota}
+  checks: [tool, entity, grounded]
+
+- id: recs_02
+  text: "Show me the critical priority recommendations."
+  tool: get_recommendations
+  args: {priority: ["critical"]}
+  checks: [tool, args, grounded]
+
+- id: recs_03
+  text: "Are there any pending recommendations for Udaipur?"
+  tool: get_recommendations
+  entity: {kind: district, id: district_udaipur}
+  checks: [tool, entity, grounded]
+
+- id: shipments_01
+  text: "Which shipments are delayed right now?"
+  tool: get_shipments
+  args: {status: ["delayed"]}
+  checks: [tool, args, grounded]
+
+- id: shipments_02
+  text: "Show me shipments heading to Kota district."
+  tool: get_shipments
+  entity: {kind: district, id: district_kota}
+  checks: [tool, entity, grounded]
+
+- id: shipments_03_hindi
+  text: "कोटा में कौन सी खेप में देरी हो रही है?"
+  tool: get_shipments
+  entity: {kind: district, id: district_kota}
+  checks: [tool, entity, grounded]
+  note: "Hindi, delayed shipments in Kota"
+
+- id: shipment_01
+  text: "Track the shipment heading to PHC Kota-4."
+  tool: get_shipment
+  entity: {kind: facility, id: kota_phc_4}
+  checks: [tool, soft_entity, grounded]
+  note: "resolves the latest active shipment for a facility; may have none at eval time"
+
+- id: shipment_02
+  text: "What is the latest shipment status for CHC East?"
+  tool: get_shipment
+  entity: {kind: facility, id: chc_east}
+  checks: [tool, soft_entity, grounded]
+
+- id: fleet_01
+  text: "What's the fleet status in Kota district?"
+  tool: get_fleet_status
+  entity: {kind: district, id: district_kota}
+  checks: [tool, entity, grounded]
+
+- id: fleet_02
+  text: "How many vehicles and drivers are on shift right now?"
+  tool: get_fleet_status
+  checks: [tool, grounded]
+
+- id: footfall_01
+  text: "What's the footfall forecast for Kota district for the next week?"
+  tool: get_footfall_forecast
+  entity: {kind: district, id: district_kota}
+  checks: [tool, entity, grounded]
+
+- id: footfall_02
+  text: "Give me tomorrow's patient footfall breakdown for Bikaner."
+  tool: get_footfall_forecast
+  entity: {kind: district, id: district_bikaner}
+  checks: [tool, entity, grounded]
+
+- id: causal_01
+  text: "Why did medicine demand increase at PHC Kota-1?"
+  tool: get_causal_chain
+  entity: {kind: facility, id: kota_phc_1}
+  checks: [tool, entity, grounded]
+
+- id: causal_02
+  text: "Explain the causal chain behind demand at PHC Rural-14."
+  tool: get_causal_chain
+  entity: {kind: facility, id: phc_18}
+  checks: [tool, entity, grounded]
+
+- id: performance_01
+  text: "Which facilities have the worst performance scores?"
+  tool: get_performance
+  checks: [tool, grounded]
+
+- id: no_tool_01
+  text: "What is ORS used for?"
+  tool: null
+  checks: [no_tool]
+
+- id: no_tool_02
+  text: "What does a district drug warehouse do?"
+  tool: null
+  checks: [no_tool]
+
+- id: no_tool_03
+  text: "What is cold-chain storage used for with vaccines?"
+  tool: null
+  checks: [no_tool]
+
+- id: no_tool_04_hindi
+  text: "ऑक्सीटोसिन किस लिए इस्तेमाल होता है?"
+  tool: null
+  checks: [no_tool]
+  note: "Hindi general medical knowledge, no district or facility named"

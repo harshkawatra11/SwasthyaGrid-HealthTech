@@ -17,11 +17,12 @@ API key formats and mistakenly sends them as OAuth bearer tokens).
 import logging
 
 from app.core.config import Settings
+from app.logistics.protocol import InsightsQuery, LogisticsQuery
 from app.prompts.system_prompt import SYSTEM_PROMPT
 from app.services.district_service import DistrictService
 from app.services.forecast_service import ForecastService
 from app.services.recommendation_service import RecommendationService
-from app.tools.district_tools import build_tools
+from app.tools.v2 import build_tools
 
 logger = logging.getLogger(__name__)
 
@@ -41,9 +42,13 @@ class HealthAgent:
         district: DistrictService,
         forecast: ForecastService,
         recommendation: RecommendationService,
+        logistics: LogisticsQuery | None = None,
+        insights: InsightsQuery | None = None,
     ):
         self.settings = settings
-        self.tools = build_tools(district, forecast, recommendation)
+        # When logistics/insights are not passed, the v2 tools resolve them
+        # lazily from app.api.deps at call time (lane A provides them).
+        self.tools = build_tools(district, forecast, recommendation, logistics, insights)
         self._client = None
 
         if settings.gemini_api_key:
