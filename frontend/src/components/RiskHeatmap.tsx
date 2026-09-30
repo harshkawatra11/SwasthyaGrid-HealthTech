@@ -1,6 +1,7 @@
-import { riskColor, riskLabel, type Facility } from "@/data/district";
+import { riskColor, riskLabel } from "@/data/district";
+import type { FacilityView } from "@/lib/facility-view";
 
-export function RiskHeatmap({ facilities }: { facilities: Facility[] }) {
+export function RiskHeatmap({ facilities }: { facilities: FacilityView[] }) {
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
       {facilities.map((f) => (

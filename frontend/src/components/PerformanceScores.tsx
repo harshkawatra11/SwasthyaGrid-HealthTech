@@ -1,6 +1,10 @@
+"use client";
+
+import { useEntityIndex } from "@/lib/entity-index";
+
 export interface PerformanceRow {
   facility_id: string;
-  facility_name: string;
+  facility_name?: string;
   overall: number;
   inventory: number;
   attendance: number;
@@ -18,6 +22,7 @@ const subScores: { key: keyof PerformanceRow; label: string }[] = [
 ];
 
 export function PerformanceScores({ rows }: { rows: PerformanceRow[] }) {
+  const { facilityName } = useEntityIndex();
   return (
     <div className="overflow-x-auto border border-hairline">
       <table className="w-full text-sm">
@@ -45,7 +50,7 @@ export function PerformanceScores({ rows }: { rows: PerformanceRow[] }) {
             .sort((a, b) => a.overall - b.overall)
             .map((f) => (
               <tr key={f.facility_id} className="border-b border-hairline last:border-0">
-                <td className="px-4 py-3 text-ink font-medium">{f.facility_name}</td>
+                <td className="px-4 py-3 text-ink font-medium">{facilityName(f.facility_id)}</td>
                 <td className="px-4 py-3 text-right tabular font-serif-display text-accent-clay">
                   {f.overall}
                 </td>

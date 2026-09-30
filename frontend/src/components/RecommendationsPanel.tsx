@@ -3,13 +3,20 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ListChecks } from "lucide-react";
-import { facilityById, type Recommendation } from "@/data/district";
-import { useRecommendations } from "@/lib/store";
+import { useRecommendations } from "@/lib/api/hooks";
+import { approveRecommendation, modifyRecommendation, rejectRecommendation } from "@/lib/api/mutations";
+import type { RecommendationV2 } from "@/lib/api/types";
+import { useEntityIndex } from "@/lib/entity-index";
+import { useInScope } from "@/lib/facility-view";
+import { useScope } from "@/lib/scope";
 import { useRole, roleCapabilities } from "@/lib/roleContext";
 import { SkeletonBlock } from "@/components/ui/Skeleton";
 import { EmptyState } from "@/components/ui/EmptyState";
 
+type Recommendation = RecommendationV2;
+
 const typeLabel: Record<Recommendation["type"], string> = {
+  replenishment: "Replenishment",
   stock_transfer: "Stock Transfer",
   staff_transfer: "Staff Transfer",
   bed_redirect: "Bed Redirect",
@@ -38,9 +45,11 @@ function RecommendationCard({
   onResolve: (id: string, status: "approved" | "rejected" | "modified", qty?: string) => void;
   canApprove: boolean;
 }) {
-  const source = facilityById(rec.sourceFacilityId);
-  const target = facilityById(rec.targetFacilityId);
-  const [qty, setQty] = useState(rec.quantityOrDetail);
+  const { facilityName, warehouseName } = useEntityIndex();
+  const sourceName =
+    rec.source_kind === "warehouse" ? warehouseName(rec.source_id) : facilityName(rec.source_facility_id);
+  const targetName = facilityName(rec.target_facility_id);
+  const [qty, setQty] = useState(rec.quantity_or_detail);
   const [editing, setEditing] = useState(false);
 
   return (
@@ -55,10 +64,10 @@ function RecommendationCard({
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-[11px] tracking-[0.14em] uppercase text-ink-soft mb-1">
-            {typeLabel[rec.type]}
+            {typeLabel[rec.type] ?? rec.type}
           </p>
           <h3 className="font-serif-display text-lg text-ink">
-            {source?.name ?? rec.sourceFacilityId} → {target?.name ?? rec.targetFacilityId}
+            {sourceName} → {targetName}
           </h3>
           <p className="text-sm text-ink-soft mt-1">
             {rec.subject} · <span className="text-ink">{qty}</span>
@@ -118,7 +127,10 @@ function RecommendationCard({
           className="mt-5 text-xs tracking-[0.14em] uppercase font-medium"
           style={{
             color:
-              rec.status === "approved" || rec.status === "modified"
+              rec.status === "approved" ||
+              rec.status === "modified" ||
+              rec.status === "dispatched" ||
+              rec.status === "fulfilled"
                 ? "var(--color-risk-healthy)"
                 : "var(--color-risk-critical)",
           }}
@@ -139,11 +151,21 @@ export function RecommendationsPanel({
   limit?: number;
   columns?: 1 | 2;
 }) {
-  const { recommendations, loading, resolve } = useRecommendations();
+  const { scope } = useScope();
+  const { data, isLoading } = useRecommendations({ district_id: scope });
+  const inScope = useInScope(scope);
   const { role } = useRole();
   const canApprove = roleCapabilities[role].canApprove;
+  const loading = isLoading || data === undefined;
 
-  let recs = filterType ? recommendations.filter((r) => r.type === filterType) : recommendations;
+  const resolve = (id: string, status: "approved" | "rejected" | "modified", qty?: string) => {
+    if (status === "approved") void approveRecommendation(id);
+    else if (status === "rejected") void rejectRecommendation(id);
+    else void modifyRecommendation(id, { quantity_override: qty ?? "" });
+  };
+
+  const scoped = (data?.recommendations ?? []).filter((r) => inScope(r.target_facility_id));
+  let recs = filterType ? scoped.filter((r) => r.type === filterType) : scoped;
   if (limit) recs = recs.slice(0, limit);
 
   const gridClass = columns === 1 ? "grid gap-4" : "grid gap-4 md:grid-cols-2";

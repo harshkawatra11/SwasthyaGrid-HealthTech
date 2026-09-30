@@ -1,15 +1,23 @@
 "use client";
 
 import { ArrowRightLeft } from "lucide-react";
-import { facilityById } from "@/data/district";
-import { useRecommendations } from "@/lib/store";
+import { useRecommendations } from "@/lib/api/hooks";
+import { useEntityIndex } from "@/lib/entity-index";
+import { useInScope } from "@/lib/facility-view";
+import { useScope } from "@/lib/scope";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { SkeletonBlock } from "@/components/ui/Skeleton";
 
 export function ResourceTransfers() {
-  const { recommendations, loading } = useRecommendations();
-  const approved = recommendations.filter(
-    (r) => r.status === "approved" || r.status === "modified"
+  const { scope } = useScope();
+  const { data, isLoading } = useRecommendations({ district_id: scope });
+  const inScope = useInScope(scope);
+  const { facilityName, warehouseName } = useEntityIndex();
+  const loading = isLoading || data === undefined;
+  const approved = (data?.recommendations ?? []).filter(
+    (r) =>
+      (r.status === "approved" || r.status === "modified" || r.status === "dispatched" || r.status === "fulfilled") &&
+      inScope(r.target_facility_id),
   );
 
   if (loading) return <SkeletonBlock rows={3} />;
@@ -32,11 +40,11 @@ export function ResourceTransfers() {
           className="flex flex-wrap items-center justify-between gap-2 border border-hairline bg-paper-dim/40 px-4 py-3 text-sm"
         >
           <span className="text-ink">
-            {facilityById(r.sourceFacilityId)?.name} →{" "}
-            {facilityById(r.targetFacilityId)?.name}
+            {r.source_kind === "warehouse" ? warehouseName(r.source_id) : facilityName(r.source_facility_id)} →{" "}
+            {facilityName(r.target_facility_id)}
           </span>
           <span className="text-ink-soft">{r.subject}</span>
-          <span className="text-ink font-medium">{r.quantityOrDetail}</span>
+          <span className="text-ink font-medium">{r.quantity_or_detail}</span>
           <span className="text-[11px] uppercase tracking-wider text-risk-healthy">
             {r.status}
           </span>

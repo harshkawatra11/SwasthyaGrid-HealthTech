@@ -1,62 +1,215 @@
 @import "tailwindcss";
 
-:root {
-  --color-paper: #f4eee4;
-  --color-paper-dim: #ede4d3;
-  --color-parchment: #e4d8c3;
-  --color-ink: #231f1a;
-  --color-ink-soft: #4a433a;
-  --color-hairline: #d8cbb4;
-  --color-accent-clay: #b5502e;
-  --color-accent-brass: #8a6d3b;
+:root,
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0a0c10;
+  --bg-elevated: #0e1116;
+  --surface-1: #12161c;
+  --surface-2: #171c23;
+  --surface-3: #1d232c;
+  --border: #232a33;
+  --border-strong: #2f3844;
+  --text: #e6e9ee;
+  --text-muted: #9aa4b2;
+  --text-faint: #6a7482;
 
-  --color-risk-healthy: #3f6b4a;
-  --color-risk-monitor: #a8823a;
-  --color-risk-stress: #b5622e;
-  --color-risk-critical: #9e3a2e;
+  --brand: #2dd4a7;
+  --brand-strong: #19b98c;
+  --brand-soft: rgb(45 212 167 / 0.14);
+  --focus-ring: rgb(45 212 167 / 0.55);
+
+  --info: #5b8def;
+  --violet: #9b87f5;
+  --cyan: #4cc9e8;
+  --amber: #f2b84b;
+  --orange: #ff8a4c;
+  --red: #f05260;
+  --green: #34d399;
+
+  --risk-healthy: #34d399;
+  --risk-monitor: #f2b84b;
+  --risk-stress: #ff8a4c;
+  --risk-critical: #f05260;
+
+  --status-recommended: #9b87f5;
+  --status-approved: #5b8def;
+  --status-loading: #4cc9e8;
+  --status-in-transit: #f2b84b;
+  --status-delayed: #ff8a4c;
+  --status-arrived: #2dd4a7;
+  --status-delivered: #34d399;
+  --status-cancelled: #6a7482;
+
+  --series-1: #5b8def;
+  --series-2: #2dd4a7;
+  --series-3: #f2b84b;
+  --series-4: #9b87f5;
+  --series-5: #ff8a4c;
+  --series-6: #4cc9e8;
+
+  /* sequential heat, index 0 = best, 4 = worst */
+  --heat-0: #123c33;
+  --heat-1: #1f6f55;
+  --heat-2: #b98a2e;
+  --heat-3: #d8663a;
+  --heat-4: #e0424f;
+  --heat-empty: #161b22;
+
+  --shadow-overlay: 0 16px 48px rgb(0 0 0 / 0.5);
+  --inset-highlight: inset 0 1px 0 rgb(255 255 255 / 0.03);
+  --map-tiles-filter: none;
+  --stage-bg: #07090c;
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg: #f5f7fa;
+  --bg-elevated: #ffffff;
+  --surface-1: #ffffff;
+  --surface-2: #f1f4f8;
+  --surface-3: #e9eef4;
+  --border: #e2e7ee;
+  --border-strong: #cbd3dd;
+  --text: #0f172a;
+  --text-muted: #475467;
+  --text-faint: #8391a5;
+
+  --brand: #0f9f7a;
+  --brand-strong: #0b7f61;
+  --brand-soft: rgb(15 159 122 / 0.12);
+  --focus-ring: rgb(15 159 122 / 0.45);
+
+  --info: #2f6fdb;
+  --violet: #6d5bd0;
+  --cyan: #0e9cc0;
+  --amber: #c98a12;
+  --orange: #e0631f;
+  --red: #d63447;
+  --green: #16a34a;
+
+  --risk-healthy: #16a34a;
+  --risk-monitor: #c98a12;
+  --risk-stress: #e0631f;
+  --risk-critical: #d63447;
+
+  --status-recommended: #6d5bd0;
+  --status-approved: #2f6fdb;
+  --status-loading: #0e9cc0;
+  --status-in-transit: #c98a12;
+  --status-delayed: #e0631f;
+  --status-arrived: #0f9f7a;
+  --status-delivered: #16a34a;
+  --status-cancelled: #8391a5;
+
+  --series-1: #2f6fdb;
+  --series-2: #0f9f7a;
+  --series-3: #c98a12;
+  --series-4: #6d5bd0;
+  --series-5: #e0631f;
+  --series-6: #0e9cc0;
+
+  --heat-0: #d7f0e6;
+  --heat-1: #9ad8bf;
+  --heat-2: #f3d58c;
+  --heat-3: #f2a27a;
+  --heat-4: #e2626f;
+  --heat-empty: #eef1f5;
+
+  --shadow-overlay: 0 16px 40px rgb(15 23 42 / 0.14);
+  --inset-highlight: none;
+  --map-tiles-filter: none;
+  --stage-bg: #07090c;
 }
 
 @theme inline {
-  --color-paper: var(--color-paper);
-  --color-paper-dim: var(--color-paper-dim);
-  --color-parchment: var(--color-parchment);
-  --color-ink: var(--color-ink);
-  --color-ink-soft: var(--color-ink-soft);
-  --color-hairline: var(--color-hairline);
-  --color-accent-clay: var(--color-accent-clay);
-  --color-accent-brass: var(--color-accent-brass);
-  --color-risk-healthy: var(--color-risk-healthy);
-  --color-risk-monitor: var(--color-risk-monitor);
-  --color-risk-stress: var(--color-risk-stress);
-  --color-risk-critical: var(--color-risk-critical);
+  --color-bg: var(--bg);
+  --color-bg-elevated: var(--bg-elevated);
+  --color-surface-1: var(--surface-1);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-text: var(--text);
+  --color-muted: var(--text-muted);
+  --color-faint: var(--text-faint);
+  --color-brand: var(--brand);
+  --color-brand-strong: var(--brand-strong);
+  --color-brand-soft: var(--brand-soft);
+  --color-info: var(--info);
+  --color-violet: var(--violet);
+  --color-cyan: var(--cyan);
+  --color-amber: var(--amber);
+  --color-orange: var(--orange);
+  --color-red: var(--red);
+  --color-green: var(--green);
+  --color-risk-healthy: var(--risk-healthy);
+  --color-risk-monitor: var(--risk-monitor);
+  --color-risk-stress: var(--risk-stress);
+  --color-risk-critical: var(--risk-critical);
 
-  --font-serif: var(--font-fraunces);
-  --font-sans: var(--font-plex-sans);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+
+  --text-2xs: 11px;
+  --text-xs: 12px;
+  --text-sm: 13px;
+  --text-base: 14px;
+
+  /* legacy aliases, delete in F12 */
+  --color-paper: var(--surface-1);
+  --color-paper-dim: var(--surface-2);
+  --color-parchment: var(--surface-3);
+  --color-ink: var(--text);
+  --color-ink-soft: var(--text-muted);
+  --color-hairline: var(--border);
+  --color-accent-clay: var(--brand);
+  --color-accent-brass: var(--amber);
+  --font-serif: var(--font-geist-sans);
 }
 
-* {
-  border-color: var(--color-hairline);
+/* Legacy names read from JavaScript via var(--color-*). Delete in F12. */
+:root {
+  --color-risk-healthy: var(--risk-healthy);
+  --color-risk-monitor: var(--risk-monitor);
+  --color-risk-stress: var(--risk-stress);
+  --color-risk-critical: var(--risk-critical);
+  --color-ink: var(--text);
+  --color-ink-soft: var(--text-muted);
+  --color-accent-clay: var(--brand);
+  --color-accent-brass: var(--amber);
+  --color-paper: var(--surface-1);
+  --color-hairline: var(--border);
 }
 
-html {
-  background: var(--color-paper);
+/* Everything below is inside @layer base so Tailwind utilities (border-brand, outline-none, ...)
+   still win. Unlayered rules would beat every layered utility in Tailwind v4. */
+@layer base {
+  html { background: var(--bg); }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+    font-size: 13px;
+    -webkit-font-smoothing: antialiased;
+  }
+  * { border-color: var(--border); }
+  :focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; border-radius: 4px; }
+  .leaflet-container { background: var(--bg-elevated) !important; font-family: inherit; }
+  .leaflet-tile-pane { filter: var(--map-tiles-filter); }
 }
 
-body {
-  background: var(--color-paper);
-  color: var(--color-ink);
-  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+@layer utilities {
+  .num { font-family: var(--font-geist-mono), ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+  .tabular { font-variant-numeric: tabular-nums; }
+  .font-serif-display { font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif; font-weight: 600; }
+  .eyebrow { font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted); }
 }
 
-.font-serif-display {
-  font-family: var(--font-serif), ui-serif, Georgia, serif;
-}
-
-.tabular {
-  font-variant-numeric: tabular-nums;
-}
-
-.leaflet-container {
-  background: var(--color-paper-dim) !important;
-  font-family: var(--font-sans), ui-sans-serif, sans-serif;
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 }

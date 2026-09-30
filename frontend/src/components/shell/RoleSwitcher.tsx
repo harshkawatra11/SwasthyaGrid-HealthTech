@@ -1,54 +1,31 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import { ChevronDown } from "lucide-react";
+import { Check, ChevronDown } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ds/overlays";
 import { useRole, roleLabels, type Role } from "@/lib/roleContext";
 
 const roles: Role[] = ["district_admin", "phc_staff", "state_officer"];
 
 export function RoleSwitcher() {
   const { role, setRole } = useRole();
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    function onClick(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    }
-    document.addEventListener("mousedown", onClick);
-    return () => document.removeEventListener("mousedown", onClick);
-  }, []);
-
   return (
-    <div className="relative" ref={ref}>
-      <button
-        onClick={() => setOpen((o) => !o)}
-        className="flex items-center gap-2 border border-hairline bg-paper px-3 py-1.5 text-sm text-ink hover:border-accent-clay transition"
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        aria-label={`Viewing as ${roleLabels[role]}`}
+        className="inline-flex h-8 items-center gap-2 rounded-md border border-border bg-surface-1 px-2.5 text-[12px] text-text hover:bg-surface-3"
       >
-        <span className="text-[10px] tracking-[0.12em] uppercase text-ink-soft">
-          Viewing as
-        </span>
-        <span className="font-medium">{roleLabels[role]}</span>
-        <ChevronDown size={14} className="text-ink-soft" />
-      </button>
-      {open && (
-        <div className="absolute right-0 mt-1 w-56 border border-hairline bg-paper shadow-[0_4px_16px_rgba(35,31,26,0.12)] z-40">
-          {roles.map((r) => (
-            <button
-              key={r}
-              onClick={() => {
-                setRole(r);
-                setOpen(false);
-              }}
-              className={`block w-full text-left px-4 py-2.5 text-sm hover:bg-paper-dim/60 transition ${
-                r === role ? "text-accent-clay font-medium" : "text-ink"
-              }`}
-            >
-              {roleLabels[r]}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
+        <span className="eyebrow hidden xl:inline">Viewing as</span>
+        <span className="max-w-[9rem] truncate font-medium">{roleLabels[role]}</span>
+        <ChevronDown size={13} className="text-muted" />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent>
+        {roles.map((r) => (
+          <DropdownMenuItem key={r} onSelect={() => setRole(r)}>
+            <Check size={12} className={r === role ? "text-brand" : "opacity-0"} />
+            {roleLabels[r]}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

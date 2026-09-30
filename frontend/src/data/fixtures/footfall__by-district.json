@@ -1,0 +1,262 @@
+{
+ "district_jaipur_rural": {
+  "district_id": "district_jaipur_rural",
+  "series": [
+   {
+    "day": "Mon",
+    "actual": 182,
+    "predicted": 178
+   },
+   {
+    "day": "Tue",
+    "actual": 191,
+    "predicted": 188
+   },
+   {
+    "day": "Wed",
+    "actual": 176,
+    "predicted": 181
+   },
+   {
+    "day": "Thu",
+    "actual": 203,
+    "predicted": 198
+   },
+   {
+    "day": "Fri",
+    "actual": 197,
+    "predicted": 201
+   },
+   {
+    "day": "Sat",
+    "predicted": 212
+   },
+   {
+    "day": "Sun",
+    "predicted": 218
+   }
+  ],
+  "tomorrow_breakdown": {
+   "children": 38,
+   "women": 91,
+   "elderly": 42,
+   "emergency": 18,
+   "general": 29
+  },
+  "confidence": 91,
+  "factors": [
+   "Seasonality",
+   "Historical footfall trend",
+   "Nearby disease cluster signals",
+   "Weather forecast"
+  ]
+ },
+ "district_alwar": {
+  "district_id": "district_alwar",
+  "series": [
+   {
+    "day": "Mon",
+    "actual": 165,
+    "predicted": 163
+   },
+   {
+    "day": "Tue",
+    "actual": 155,
+    "predicted": 162
+   },
+   {
+    "day": "Wed",
+    "actual": 162,
+    "predicted": 168
+   },
+   {
+    "day": "Thu",
+    "actual": 187,
+    "predicted": 187
+   },
+   {
+    "day": "Fri",
+    "actual": 158,
+    "predicted": 160
+   },
+   {
+    "day": "Sat",
+    "predicted": 193
+   },
+   {
+    "day": "Sun",
+    "predicted": 199
+   }
+  ],
+  "tomorrow_breakdown": {
+   "children": 36,
+   "women": 56,
+   "elderly": 37,
+   "emergency": 19,
+   "general": 39
+  },
+  "confidence": 91,
+  "factors": [
+   "Seasonality",
+   "Historical footfall trend",
+   "Nearby disease cluster signals",
+   "Weather forecast"
+  ]
+ },
+ "district_bikaner": {
+  "district_id": "district_bikaner",
+  "series": [
+   {
+    "day": "Mon",
+    "actual": 217,
+    "predicted": 224
+   },
+   {
+    "day": "Tue",
+    "actual": 205,
+    "predicted": 208
+   },
+   {
+    "day": "Wed",
+    "actual": 216,
+    "predicted": 216
+   },
+   {
+    "day": "Thu",
+    "actual": 236,
+    "predicted": 233
+   },
+   {
+    "day": "Fri",
+    "actual": 228,
+    "predicted": 236
+   },
+   {
+    "day": "Sat",
+    "predicted": 233
+   },
+   {
+    "day": "Sun",
+    "predicted": 230
+   }
+  ],
+  "tomorrow_breakdown": {
+   "children": 44,
+   "women": 70,
+   "elderly": 47,
+   "emergency": 23,
+   "general": 49
+  },
+  "confidence": 91,
+  "factors": [
+   "Seasonality",
+   "Historical footfall trend",
+   "Nearby disease cluster signals",
+   "Weather forecast"
+  ]
+ },
+ "district_udaipur": {
+  "district_id": "district_udaipur",
+  "series": [
+   {
+    "day": "Mon",
+    "actual": 244,
+    "predicted": 238
+   },
+   {
+    "day": "Tue",
+    "actual": 237,
+    "predicted": 233
+   },
+   {
+    "day": "Wed",
+    "actual": 238,
+    "predicted": 232
+   },
+   {
+    "day": "Thu",
+    "actual": 226,
+    "predicted": 221
+   },
+   {
+    "day": "Fri",
+    "actual": 242,
+    "predicted": 245
+   },
+   {
+    "day": "Sat",
+    "predicted": 226
+   },
+   {
+    "day": "Sun",
+    "predicted": 244
+   }
+  ],
+  "tomorrow_breakdown": {
+   "children": 42,
+   "women": 66,
+   "elderly": 44,
+   "emergency": 22,
+   "general": 46
+  },
+  "confidence": 91,
+  "factors": [
+   "Seasonality",
+   "Historical footfall trend",
+   "Nearby disease cluster signals",
+   "Weather forecast"
+  ]
+ },
+ "district_kota": {
+  "district_id": "district_kota",
+  "series": [
+   {
+    "day": "Mon",
+    "actual": 161,
+    "predicted": 155
+   },
+   {
+    "day": "Tue",
+    "actual": 175,
+    "predicted": 176
+   },
+   {
+    "day": "Wed",
+    "actual": 170,
+    "predicted": 175
+   },
+   {
+    "day": "Thu",
+    "actual": 202,
+    "predicted": 198
+   },
+   {
+    "day": "Fri",
+    "actual": 198,
+    "predicted": 195
+   },
+   {
+    "day": "Sat",
+    "predicted": 196
+   },
+   {
+    "day": "Sun",
+    "predicted": 158
+   }
+  ],
+  "tomorrow_breakdown": {
+   "children": 38,
+   "women": 59,
+   "elderly": 40,
+   "emergency": 20,
+   "general": 42
+  },
+  "confidence": 91,
+  "factors": [
+   "Seasonality",
+   "Historical footfall trend",
+   "Nearby disease cluster signals",
+   "Weather forecast"
+  ]
+ }
+}

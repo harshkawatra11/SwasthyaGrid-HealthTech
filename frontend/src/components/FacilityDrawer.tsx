@@ -1,29 +1,23 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useMemo } from "react";
 import { Drawer } from "@/components/ui/Drawer";
 import { SkeletonBlock } from "@/components/ui/Skeleton";
-import { getFacilityDetail, type FacilityDetail } from "@/lib/api";
-import { riskColor, riskLabel, type Facility } from "@/data/district";
+import { useMedicines } from "@/lib/api/hooks";
+import type { FacilityView } from "@/lib/facility-view";
+import { riskColor, riskLabel } from "@/data/district";
 
 export function FacilityDrawer({
   facility,
   onClose,
 }: {
-  facility: Facility | null;
+  facility: FacilityView | null;
   onClose: () => void;
 }) {
-  const [detail, setDetail] = useState<FacilityDetail | null>(null);
-  const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    if (!facility) return;
-    setLoading(true);
-    setDetail(null);
-    getFacilityDetail(facility.id)
-      .then(setDetail)
-      .finally(() => setLoading(false));
-  }, [facility]);
+  const { data, isLoading } = useMedicines("all");
+  const id = facility?.id;
+  const stock = useMemo(() => (data?.medicines ?? []).filter((m) => m.facility_id === id), [data, id]);
+  const loading = !!facility && (isLoading || data === undefined);
 
   return (
     <Drawer
@@ -44,6 +38,7 @@ export function FacilityDrawer({
             </span>
           </div>
 
+          {facility.performance && (
           <div>
             <p className="text-[11px] tracking-[0.14em] uppercase text-ink-soft mb-2">
               Performance Scorecard
@@ -59,16 +54,17 @@ export function FacilityDrawer({
               ))}
             </div>
           </div>
+          )}
 
           {loading && <SkeletonBlock rows={4} />}
 
-          {!loading && detail && detail.medicine_stock.length > 0 && (
+          {!loading && stock.length > 0 && (
             <div>
               <p className="text-[11px] tracking-[0.14em] uppercase text-ink-soft mb-2">
                 Medicine Stock
               </p>
               <div className="space-y-2">
-                {detail.medicine_stock.map((m) => (
+                {stock.map((m) => (
                   <div key={m.medicine_name} className="border border-hairline px-3 py-2 text-sm">
                     <div className="flex justify-between">
                       <span className="text-ink font-medium">{m.medicine_name}</span>
@@ -80,10 +76,9 @@ export function FacilityDrawer({
             </div>
           )}
 
-          {!loading && (!detail || detail.medicine_stock.length === 0) && (
+          {!loading && stock.length === 0 && (
             <p className="text-xs text-ink-soft italic">
-              Live inventory/bed/doctor detail loads once the backend is reachable — start
-              `uvicorn app.main:app --port 8080` to see it here.
+              No medicine stock data for this facility yet.
             </p>
           )}
         </div>

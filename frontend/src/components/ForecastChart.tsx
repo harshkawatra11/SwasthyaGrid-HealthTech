@@ -76,7 +76,7 @@ export function ForecastChart({
 
       <div className="border border-hairline bg-paper-dim/40 p-5">
         <p className="text-[11px] tracking-[0.14em] uppercase text-ink-soft mb-4">
-          Tomorrow's Breakdown
+          Tomorrow&apos;s Breakdown
         </p>
         <ResponsiveContainer width="100%" height={220}>
           <BarChart data={breakdown} layout="vertical" margin={{ left: 10 }}>

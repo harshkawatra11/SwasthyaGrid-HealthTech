@@ -1,22 +1,31 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import { RoleProvider } from "@/lib/roleContext";
-import { RecommendationsProvider, useRecommendations } from "@/lib/store";
-import { Sidebar } from "./Sidebar";
+import { ScopeProvider } from "@/lib/scope";
+import { ApiEntityIndexProvider } from "@/lib/api/entities";
+import { ShellFeeds, SwrProvider } from "@/lib/api/shell-feeds";
+import { Toaster } from "@/components/ds/Toaster";
+import { Sheet, SheetContent } from "@/components/ds/overlays";
+import { Sidebar, SidebarNav } from "./Sidebar";
 import { Topbar } from "./Topbar";
 import { CommandPalette } from "./CommandPalette";
 import { PageTransition } from "./PageTransition";
-import { Toast } from "@/components/ui/Toast";
-import { AskPanel } from "@/components/AskPanel";
+import { ShellSkeleton } from "./ShellSkeleton";
+import { VoiceDock } from "@/components/voice/VoiceDock";
+import { VoiceSessionProvider } from "@/lib/voice/VoiceSessionProvider";
 
-function ToastBridge() {
-  const { toast } = useRecommendations();
-  return <Toast message={toast} />;
-}
-
-export function DashboardShell({ children }: { children: React.ReactNode }) {
+function Shell({ children }: { children: React.ReactNode }) {
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const [navOpen, setNavOpen] = useState(false);
+  const pathname = usePathname();
+  const [navPath, setNavPath] = useState(pathname);
+  // Close the mobile sheet when the route changes (state adjusted during render, not in an effect).
+  if (navPath !== pathname) {
+    setNavPath(pathname);
+    setNavOpen(false);
+  }
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
@@ -30,21 +39,47 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <RoleProvider>
-      <RecommendationsProvider>
-        <div className="flex min-h-screen bg-paper">
-          <Sidebar />
-          <div className="flex-1 min-w-0 flex flex-col">
-            <Topbar onOpenPalette={() => setPaletteOpen(true)} />
-            <main className="flex-1 px-6 md:px-10 py-8 max-w-6xl w-full mx-auto">
-              <PageTransition>{children}</PageTransition>
-            </main>
-          </div>
+    <>
+      <div className="flex min-h-screen bg-bg">
+        <Sidebar />
+        <div className="flex min-w-0 flex-1 flex-col">
+          <Topbar onOpenPalette={() => setPaletteOpen(true)} onOpenNav={() => setNavOpen(true)} />
+          <main className="mx-auto w-full max-w-[1680px] flex-1 px-4 py-5 lg:px-6">
+            <PageTransition>{children}</PageTransition>
+          </main>
         </div>
-        <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
-        <ToastBridge />
-        <AskPanel />
-      </RecommendationsProvider>
+      </div>
+      <Sheet open={navOpen} onOpenChange={setNavOpen}>
+        <SheetContent title="SwasthyaGrid" side="left" className="lg:hidden">
+          <div className="-m-4 flex h-full flex-col">
+            <SidebarNav onNavigate={() => setNavOpen(false)} />
+          </div>
+        </SheetContent>
+      </Sheet>
+      <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
+      <Toaster />
+      <VoiceDock />
+    </>
+  );
+}
+
+export function DashboardShell({ children }: { children: React.ReactNode }) {
+  return (
+    <RoleProvider>
+      <SwrProvider>
+        <ApiEntityIndexProvider>
+          {/* useSearchParams (inside ScopeProvider) requires a Suspense boundary or next build fails. */}
+          <Suspense fallback={<ShellSkeleton />}>
+            <ScopeProvider>
+              <VoiceSessionProvider>
+                <ShellFeeds>
+                  <Shell>{children}</Shell>
+                </ShellFeeds>
+              </VoiceSessionProvider>
+            </ScopeProvider>
+          </Suspense>
+        </ApiEntityIndexProvider>
+      </SwrProvider>
     </RoleProvider>
   );
 }
