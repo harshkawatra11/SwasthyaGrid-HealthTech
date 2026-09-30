@@ -1,447 +1,362 @@
-<div align="center">
+# SwasthyaGrid
 
-# SwasthyaGrid-HealthTech
+A district health control room for Rajasthan. It forecasts medicine stock-outs, bed pressure and staffing risk across 40 facilities in 5 districts, turns those forecasts into ranked recommendations, moves approved recommendations onto a simulated truck fleet, and closes the loop when the receiving facility confirms delivery in a separate intake CRM. A bilingual voice agent (Hindi, Hinglish, English) answers questions grounded in the same data.
 
-*Predictive district health operations, real-time resource reallocation, explainable risk modeling, and emergency triage for public healthcare.*
+License: Apache 2.0 is the intended license; note that no `LICENSE` file is present in this checkout.
 
-[![Live App](https://img.shields.io/badge/Live_App-swasthyagrid.vercel.app-2d5a3d?style=for-the-badge&logo=vercel&logoColor=white)](https://swasthyagrid.vercel.app)
-[![API Status](https://img.shields.io/badge/Backend-Cloud_Run_asia--south1-1a5276?style=for-the-badge&logo=googlecloud&logoColor=white)](https://swasthyagrid-api-616415200021.asia-south1.run.app/docs)
-[![Tests](https://img.shields.io/badge/tests-passing-27ae60?style=for-the-badge&logo=pytest&logoColor=white)](#-testing-and-evaluation)
-[![License](https://img.shields.io/badge/license-Apache_2.0-875a12?style=for-the-badge)](LICENSE)
+## Contents
 
-[![FastAPI](https://img.shields.io/badge/FastAPI_0.115+-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
-[![Next.js](https://img.shields.io/badge/Next.js_16-000000?style=for-the-badge&logo=next.js&logoColor=white)](https://nextjs.org)
-[![TypeScript](https://img.shields.io/badge/TypeScript_5-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org)
-[![Python](https://img.shields.io/badge/Python_3.12-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org)
-[![Firestore](https://img.shields.io/badge/Firestore-FFCA28?style=for-the-badge&logo=firebase&logoColor=black)](https://firebase.google.com/docs/firestore)
-[![Gemini](https://img.shields.io/badge/Gemini_2.5_Flash-8e44ad?style=for-the-badge&logo=google&logoColor=white)](https://ai.google.dev)
+1. [The problem](#the-problem)
+2. [What is in this repository](#what-is-in-this-repository)
+3. [Architecture](#architecture)
+4. [Feature tour](#feature-tour)
+5. [Voice agent](#voice-agent)
+6. [Supply chain module](#supply-chain-module)
+7. [Data provenance and attributions](#data-provenance-and-attributions)
+8. [Running it on Windows](#running-it-on-windows)
+9. [Environment variables](#environment-variables)
+10. [Demo script](#demo-script-about-four-minutes)
+11. [Testing and evaluation](#testing-and-evaluation)
+12. [What the system decides and what it proposes](#what-the-system-decides-and-what-it-proposes)
+13. [Known limitations](#known-limitations)
+14. [Further reading](#further-reading)
 
-[The crisis](#-the-claim-this-is-built-on) &middot;
-[One unified grid](#-one-unified-grid-not-disconnected-tools) &middot;
-[Stack map](#-a-map-of-the-stack) &middot;
-[Technology cards](#-technology-cards) &middot;
-[Architecture](#-architecture) &middot;
-[The reallocation loop](#-the-reallocation-loop-visualised) &middot;
-[Dual-agent security](#-dual-agent-isolation--security) &middot;
-[Backend deep-dive](#-backend-deep-dive) &middot;
-[Evaluation](#-testing-and-evaluation) &middot;
-[Run locally](#-running-it-locally) &middot;
-[Deterministic vs AI](#-what-this-system-decides-what-it-merely-proposes)
+## The problem
 
-</div>
+Across India's public healthcare system, more than 25,000 Primary Health Centres (PHCs) and 5,600 Community Health Centres (CHCs) provide frontline care. Operational data from these facilities often lives in paper registers, spreadsheets and monthly summaries. When a rural PHC runs out of Anti-Snake Venom, Anti-Rabies Vaccine, Oxytocin or Adrenaline, the district office can learn about it days after the stock reached zero, while a sibling facility a short drive away holds a surplus of the same item.
 
----
+Health management information systems mostly record what went wrong last month. They do not forecast tomorrow's depletion or work out where stock should move. SwasthyaGrid computes stock burn rates and bed saturation ahead of time, proposes inter-facility and warehouse-to-facility movements with a confidence score and stated reasons, and requires a human approval before anything is dispatched.
 
-## 🩺 The claim this is built on
+## What is in this repository
 
-Across India's public healthcare grid, more than **25,000 Primary Health Centres (PHCs)** and **5,600 Community Health Centres (CHCs)** deliver frontline medical care to over 800 million citizens. In practice, operational telemetry across these facilities lives in fragmented paper registers, disparate spreadsheets, and delayed monthly summaries.
+| Part | Location | Port | Role |
+|---|---|---|---|
+| FastAPI backend | `backend/` | 8080 | Forecasting, recommendation engine, logistics simulator and planner, insights, voice WebSocket, typed Ask agent |
+| Next.js dashboard | `frontend/` | 3000 | Control room UI: command centre, voice page, supply chain pages, district and facility drill-downs |
+| Intake CRM | `ai-healthcare-crm/` | 3001 | Facility staff update stock and confirm incoming deliveries |
 
-When a rural PHC experiences an unpredicted surge in acute gastroenteritis or dengue, or when essential life-saving stocks—such as **Anti-Snake Venom (ASV)**, **Anti-Rabies Vaccine (ARV)**, **Oxytocin**, or **Adrenaline**—reach zero, the Chief Medical Officer (CMO) at the district headquarters typically discovers the crisis **3 to 7 days after stock depletion**. Simultaneously, a sibling PHC merely 12 kilometers away often holds a 45-day surplus of the exact same medication, decaying toward expiration.
+The CRM is a separate git repository (`SwasthyaGrid-CRM`, branch `feat/deliveries`) and is not part of this repository. Clone it next to the backend and dashboard checkout if you want to run the full delivery loop. Everything else in this README works without it.
 
-Legacy health management information systems (HMIS) function strictly as post-facto audit tools: they record what went wrong last month. They do not forecast tomorrow's depletion, they do not calculate optimal geographic redistribution vectors, and they leave rural citizens stranded without real-time triage or functional facility routing.
-
-> Everyone else builds static historical dashboards or generic conversational wrappers. SwasthyaGrid calculates stock burn rates and bed saturation curves 3 to 7 days into the future, optimizes inter-facility transfer vectors via Haversine logistics modeling, and enforces strict human-in-the-loop authorization before a single vial or doctor is moved.
-
----
-
-## 🔄 One unified grid, not disconnected tools
-
-A district health administrative team and the rural population they protect operate in interdependent operational loops. SwasthyaGrid unifies both operational command and public triage into a single continuous intelligence pipeline:
-
-1. **Predictive Medicine Inventory & Depletion Forecasting** (`/inventory`, `/overview`): Continuously computes days-to-zero per drug based on historical daily burn rates multiplied by environmental risk multipliers (e.g., rainfall, dengue clusters, heatwaves). Automatically flags high-risk depletion ($< 3\text{ days}$) before stock-outs occur.
-2. **Dynamic Bed Capacity & Maternity Triage** (`/beds`): Forecasts occupancy rates across general and maternity wards 24 hours and 7 days ahead. Triggers automated sibling facility redirection proposals whenever a facility breaches the $90\%$ capacity threshold.
-3. **Staff Attendance & Provider Risk Detection** (`/doctors`): Analyzes longitudinal attendance patterns (such as recurrent single-day absence cycles), computes downstream patient delay impact percentages, and surfaces temporary rotation recommendations from facilities with surplus staffing capacity.
-4. **Diagnostic Equipment Audit & Failover Routing** (`/diagnostics`): Monitors active lab machines and diagnostic units (e.g., X-Ray, CBC analyzers). On machine failure, it immediately resolves the nearest operational alternative facility by road distance.
-5. **Human-Governed Prescription & Reallocation Engine** (`/recommendations`): Converts raw statistical risk into ranked, actionable transfer orders (`[Approve]`, `[Modify]`, `[Reject]`) equipped with mathematical confidence scores and explicit causal factor breakdowns.
-6. **Citizen Emergency Triage & Real-Time Facility Locator** (`/citizen`): Dedicated, security-isolated public portal offering instant, deterministic 108 emergency triage protocols and live GPS-based nearest functional PHC locator backed by Google Maps Places API.
-
----
-
-## 🧠 A map of the stack
-
-A complete map of every core dependency and subsystem in the repository, organized by operational responsibility:
+## Architecture
 
 ```mermaid
-mindmap
-  root((SwasthyaGrid-HealthTech))
-    Frontend Layer
-      Next.js 16 App Router
-      React 19 Server & Client Components
-      TypeScript 5 Strict Typing
-      Tailwind CSS 4 Editorial Parchment System
-      Recharts Visualizations & Leaflet GIS Mapping
-      Lucide React System Icons
-    Deterministic Core Engines
-      Days-to-Depletion Forecast Engine
-      Haversine Geographic Distance Matrix
-      Surplus Preservation & Deficit Rebalancing
-      Multi-Factor Confidence Scoring Algorithm
-      Causal Factor Association Pipeline
-      Security & Strict Transport Headers Middleware
-    AI Explanation Layer
-      Dual-Agent Isolation Architecture
-      HealthAgent Administrative Explainer
-      PublicAgent Citizen Emergency Assistant
-      Gemini 2.5 Flash / 3.5 Flash Lite Tool Calling
-      Non-Blocking Fallback Circuit Breakers
-    Data & Infrastructure
-      Firestore Multi-Collection Store
-      20-Second Resilient TTL Cache
-      Zero-Config Bundled JSON Seed Store
-      FastAPI 0.115+ Asynchronous Backend
-      Google Cloud Run Serverless asia-south1
-      Google Secret Manager Zero-Leak Auth
-      Google Maps Places API Routing
-    Verification & Tooling
-      Pytest Backend Suite
-      Ruff Linter & Formatter
-      Next.js Strict Build Verification
-      Docker Multi-Stage Non-Root Build
+flowchart LR
+  subgraph Browser
+    UI[Next.js 16 dashboard<br/>dark control room]
+    VP[/voice page<br/>R3F glass orb/]
+  end
+  subgraph Backend[FastAPI :8080]
+    API[REST /api/v1/*]
+    SSE[SSE /api/v1/logistics/stream]
+    WS[WS /ws/voice]
+    REC[RecommendationEngine v2]
+    LOG[LogisticsService<br/>planner + simulator]
+    STORE[(StateStore<br/>JSON file or Firestore)]
+    REPO[(DistrictRepository<br/>Firestore or seed)]
+    VOICE[VoiceSession v2<br/>turn controller]
+  end
+  subgraph CRM[Intake CRM :3001]
+    CRMUI[Facility portal<br/>Incoming deliveries]
+    CRMAPI[Route handlers]
+  end
+  FS[(Firestore<br/>swasthyagrid-ai-54886)]
+  SARVAM[[Sarvam AI<br/>STT, LLM, TTS]]
+  UI -- fetch 127.0.0.1 --> API
+  UI -- EventSource --> SSE
+  VP -- WebSocket --> WS
+  WS --> VOICE --> SARVAM
+  VOICE --> REC & LOG & REPO
+  API --> REC --> LOG --> STORE
+  API --> REPO
+  REPO --> FS
+  STORE -.optional write-through.-> FS
+  CRMUI --> CRMAPI
+  CRMAPI -- service token REST --> API
+  CRMAPI -- Admin SDK stock increment --> FS
 ```
 
----
+In the current build the state store is the JSON file backend (`backend/.runtime/logistics_state.json`); the Firestore write-through shown as a dotted line is not implemented. The repository reads Firestore when it is reachable and configured, and otherwise reads the bundled seed data (see [Known limitations](#known-limitations)).
 
-## 🗂️ Technology cards
+Architecture principles that carry over from the first version and still hold:
 
-Every technology card below references concrete files and subsystems within this codebase:
+- Deterministic engines compute the numbers (days of cover, bed saturation, transfer quantities, confidence, status derivation). Language models explain and phrase; they do not decide.
+- Every recommendation needs a human action (approve, modify or reject) before a shipment is created.
+- The administrative agent and the voice agent use read-only tools.
+- The dashboard keeps working when the backend is down: it shows fixture data and an offline banner.
+- Security headers are applied by a pure ASGI middleware, so streaming responses (SSE) are not interfered with.
 
-| Technology | Architectural Role | Codebase Location |
-| :--- | :--- | :--- |
-| **FastAPI 0.115+ (Python 3.12)** | Asynchronous REST backend, strict Pydantic DTO schemas, domain exception hierarchies, and dependency injection container | [`backend/app/main.py`](file:///backend/app/main.py), [`backend/app/api/v1/routes.py`](file:///backend/app/api/v1/routes.py) |
-| **Next.js 16 (App Router)** | Server-rendered command dashboards, route-level data streaming, and edge API proxies | [`frontend/src/app/`](file:///frontend/src/app/), [`frontend/src/app/(dashboard)/layout.tsx`](file:///frontend/src/app/(dashboard)/layout.tsx) |
-| **React 19 & TypeScript 5** | Reactive dashboard widgets, dynamic approval modals, interactive Leaflet maps, and shared district type definitions | [`frontend/src/data/district.ts`](file:///frontend/src/data/district.ts), [`frontend/src/app/(dashboard)/map/`](file:///frontend/src/app/(dashboard)/map/) |
-| **Tailwind CSS 4** | High-density editorial design system with bespoke warm parchment tones (`#FDFBF7`, `#1A2E26`, `#B5502E`), avoiding generic SaaS aesthetics | [`frontend/src/app/globals.css`](file:///frontend/src/app/globals.css) |
-| **Forecast Engine** | Pure mathematical risk computation: burn rate analysis, safety-stock floors, and risk tier categorization | [`backend/app/services/forecast_service.py`](file:///backend/app/services/forecast_service.py) |
-| **Recommendation Engine** | Spatial surplus discovery via Haversine distance, transfer quantity optimization, and multi-factor confidence scoring | [`backend/app/services/recommendation_service.py`](file:///backend/app/services/recommendation_service.py) |
-| **Resilient Repository Pattern** | Dual-mode persistence: live Firestore sync with 20s TTL caching and zero-dependency JSON fallback | [`backend/app/repositories/district_repository.py`](file:///backend/app/repositories/district_repository.py) |
-| **Dual Gemini Agents** | Isolated tool-calling agents (`HealthAgent` for admin diagnostics, `PublicAgent` for citizen first-aid) using `google-genai` | [`backend/app/agents/health_agent.py`](file:///backend/app/agents/health_agent.py), [`backend/app/agents/public_agent.py`](file:///backend/app/agents/public_agent.py) |
-| **Emergency & GIS Tools** | Deterministic life-threatening condition detector, national helpline director (108/104/112), and Maps Places integration | [`backend/app/tools/emergency_tool.py`](file:///backend/app/tools/emergency_tool.py), [`backend/app/tools/maps_tool.py`](file:///backend/app/tools/maps_tool.py) |
-| **Google Cloud Run & Vercel** | Containerized serverless deployment in `asia-south1` with runtime secret injection via Google Secret Manager | [`backend/Dockerfile`](file:///backend/Dockerfile), [`vercel.json`](file:///vercel.json) |
+## Feature tour
 
----
+The sidebar groups pages as follows. All pages are scope-aware: a global district scope (`all` or one of the five districts) is kept in the URL search parameter `d` (for example `/inventory?d=district_kota`) and restored from `localStorage`.
 
-## 🏗️ Architecture
+| Group | Page | Route | Notes |
+|---|---|---|---|
+| Command | Command Centre | `/command` | State KPIs, Rajasthan choropleth, district league table, facility by dimension heatmap, live trucks, AI briefing. `/` and `/overview` redirect here. |
+| Command | Voice Control Room | `/voice` | Glass orb, live transcript, tool trace, fact cards, typed fallback |
+| Command | Recommendations | `/recommendations` | Approve, modify, reject; shows the shipment an approval created |
+| Districts | District Comparison | `/districts` | Side-by-side risk index and metrics |
+| Districts | District Detail | `/districts/[districtId]` | Reached by drill-down, not in the sidebar |
+| Districts | Facilities | `/facilities` | Filterable table with risk chips |
+| Districts | Facility Profile | `/facilities/[facilityId]` | Reached by drill-down: stock, beds, staff, inbound shipments, causal chain |
+| Districts | Geo Intelligence | `/map` | Leaflet map with district boundaries and facility markers |
+| Supply Chain | Dispatch | `/supply` | Live map of all trucks, status chips, KPI overlay, volume chart |
+| Supply Chain | Shipments | `/supply/shipments` | Filterable shipment list |
+| Supply Chain | Shipment Tracking | `/supply/shipments/[shipmentId]` | ETA countdown, status stepper, driver card, cold-chain temperature, route on map |
+| Supply Chain | Fleet | `/supply/fleet` | Vehicles with live status and cargo pallet view |
+| Supply Chain | Drivers | `/supply/drivers` | Roster, live status, driver panel |
+| Supply Chain | Load Planning | `/supply/planning` | Queue, capacity view, Gantt chart of trips |
+| Supply Chain | Warehouses | `/supply/warehouses` | Stock, reservations, days of cover, expiry |
+| Operations | Inventory | `/inventory` | Stock and days of cover by facility and medicine |
+| Operations | Footfall | `/footfall` | Seven day patient volume forecast |
+| Operations | Beds | `/beds` | Occupancy now and next week |
+| Operations | Doctors | `/doctors` | Attendance and absence risk |
+| Operations | Diagnostics | `/diagnostics` | Equipment status and failover |
+| Insights | Analytics | `/analytics` | Cross-cutting charts and scenario views |
 
-The end-to-end request lifecycle enforces a strict separation between deterministic business computation and probabilistic AI explanation:
+The dashboard also has a design system reference page at `/ds` (theme tokens and components), a dark theme by default with a light theme toggle, a command palette, and a topbar sim clock chip (1x, 10x, 60x, 120x and reset).
 
-```mermaid
-graph TD
-    subgraph "Clients & Ingestion"
-        A[District CMO Dashboard] -->|HTTPS / REST| C[Next.js 16 Web App]
-        B[Citizen / Patient Mobile] -->|HTTPS / REST| C
-        CRM[Facility Intake CRM / Ground Staff] -->|Direct Live Writes| FS[(Google Cloud Firestore)]
-    end
+The typed Ask endpoint (`POST /api/v1/ask`, Gemini) remains. It works without a key in the sense that the rest of the product does; the AI answer returns a structured fallback when no key is set.
 
-    subgraph "Edge & API Gateway"
-        C -->|Proxy /ask| D[Next.js Route Handlers]
-        C -->|REST API Calls| E[FastAPI asia-south1 Cloud Run]
-    end
+## Voice agent
 
-    subgraph "Data Access & Fallback Layer"
-        E --> F[DistrictRepository]
-        F -->|20s TTL Cache Read| FS
-        F -.->|Automatic Fallback if Offline| G[(Bundled Seed JSON)]
-    end
+The voice agent is a WebSocket endpoint (`/ws/voice`) in the backend. It uses Sarvam AI for all three stages:
 
-    subgraph "Deterministic Core Services"
-        F --> H[ForecastService]
-        H -->|Burn Rate & Depletion| I[Days-to-Stockout Calculation]
-        H -->|Capacity Saturation| J[Bed Occupancy Model]
-        
-        I --> K[RecommendationService]
-        J --> K
-        K -->|Spatial Matrix| L[Haversine Optimization]
-        L -->|Deficit vs Surplus| M[Transfer Rebalancing Plan]
-        M -->|Multi-Factor Math| N[Confidence Scoring 0-100%]
-    end
+- **Speech to text**: Sarvam realtime STT (`saaras:v3-realtime`) over a WebSocket, with server-side voice activity detection. Audio is PCM16, mono, 16 kHz, sent from the browser in roughly 100 ms frames.
+- **Language model**: a Sarvam chat model with tool calling (`sarvam-105b-conversations` by default). Answers are streamed and split into sentences.
+- **Text to speech**: Sarvam `bulbul:v3` over a WebSocket, streamed as 24 kHz PCM. If the socket fails mid-turn the remaining sentences of that turn fall back to REST synthesis.
 
-    subgraph "Human Authorization Gate"
-        N --> O[State: PENDING]
-        O -->|District Admin Review| P{CMO Action}
-        P -->|Approve / Modify| Q[State: APPROVED / MODIFIED]
-        P -->|Reject| R[State: REJECTED]
-    end
+Behaviour:
 
-    subgraph "Dual AI Agent Explanation Layer"
-        E --> S[HealthAgent - Admin Only]
-        E --> T[PublicAgent - Citizen Only]
-        S -->|Tool Calls Read Services| K
-        S -.->|Natural Language Explanation| U[[Gemini 2.5 Flash]]
-        T -->|First-Aid & GPS PHC Search| V[Emergency & Maps Tools]
-        T -.->|Triage Guidance & 108 Priority| U
-    end
+- **Streaming.** The answer is spoken sentence by sentence as the model produces it. A short filler line ("One moment, checking the data.") plays if a tool round is still running about one second after the end of speech.
+- **Barge-in.** If the officer starts speaking while the assistant is thinking or speaking, the current turn is cancelled once the transcript shows at least two words (with a 400 ms guard after the first audio so the assistant's own voice does not interrupt it). The Stop button interrupts immediately.
+- **Tools.** Thirteen read-only tools cover state and district briefings, facility lookup and status, shortages, district comparison, recommendations, shipments and single shipment tracking, fleet status, footfall forecast, causal chain and performance. Spoken names ("Kota ka PHC chaar", "rural fourteen", Devanagari names) go through fuzzy resolvers. The agent cannot approve, reject, dispatch or cancel anything.
+- **Fact cards.** Each reply can carry structured cards (district summary, facility, shortages, ranking, shipments, shipment, fleet) that the voice page renders next to the transcript.
+- **Grounding rule.** Facts about districts, facilities, stock, shipments and so on must come from a tool result in the same conversation. General knowledge (what ORS is used for, why vaccines need a cold chain) is allowed and presented as general guidance.
+- **Orb.** A Three.js glass orb (react-three-fiber) reacts to microphone level and to assistant playback level: mint while listening, violet while speaking. It falls back to a CSS orb where WebGL is unavailable, and honours reduced motion.
 
-    style U fill:#f4ece1,stroke:#8e44ad,stroke-width:2px
-    style O fill:#fff3cd,stroke:#856404,stroke-width:2px
-    style Q fill:#d4edda,stroke:#155724,stroke-width:2px
-    style R fill:#f8d7da,stroke:#721c24,stroke-width:2px
+Protocol details are in [`docs/v2-architecture.md`](docs/v2-architecture.md).
+
+## Supply chain module
+
+The supply chain is a deterministic simulation on top of real road geometry. It exists so that a recommendation has somewhere to go.
+
+- **Master data.** 6 warehouses (one state central warehouse in Jaipur and one district drug warehouse per district), 31 vehicles in 5 classes (two of them refrigerated), 40 drivers, a 7-medicine catalogue with pack sizes, weights and cold-chain flags, 365 precomputed road routes, and 90 days of shipment history for charts.
+- **Simulator.** An accelerated clock (default 60 simulated seconds per real second) drives a tick loop once per real second. A trip is a list of segments (load, drive, dwell, incident). Position, status and events are derived from the trip and the current sim time, so a restart reproduces the same history. Incidents (traffic, checkpost, tyre puncture and similar) and refrigerated-cargo temperature excursions are drawn from a seeded random source keyed on the shipment id.
+- **Planner.** Picks the smallest adequate vehicle class, then a driver on shift with driving hours to spare, and reserves warehouse stock. Shipments that cannot be assigned stay queued with a readable reason (for example "No refrigerated vehicle free at DDW Kota until 15:40").
+- **Statuses.** `recommended`, `approved`, `loading`, `in_transit`, `delayed`, `arrived`, `delivered`, `cancelled`. All but the last two stored ones are derived from the trip timeline.
+- **Routes.** Road paths come from OSRM, precomputed into `backend/data/routes.json` by `backend/scripts/build_routes.py`. The app never calls OSRM at runtime.
+- **Live updates.** `GET /api/v1/logistics/stream` is a Server-Sent Events stream with `tick` (vehicle positions, every second), `shipment`, `risk`, `recommendations` and `kpis` events. The dashboard opens it with `EventSource`.
+- **Proof-of-delivery loop with the CRM.** When a truck reaches a facility the shipment becomes `arrived`. Facility staff open the CRM, see the incoming delivery, and confirm the received quantities. The CRM calls the backend (`POST /shipments/{id}/pod` with a service token), then increments stock in Firestore in a transaction, then tells the backend the stock was applied. The backend marks the shipment `delivered`, refreshes recommendations, and the dashboard shows the facility's risk dropping without a reload. The sequence is idempotent: a repeated confirmation changes nothing.
+
+## Data provenance and attributions
+
+All logistics, fleet, driver and shipment history data is simulated. The dashboard labels every supply page "Simulated operational data". No number about vehicles, drivers, warehouses, shipment volumes, on-time rates or delivery history is a real statistic about Rajasthan or any real agency. Warehouse names are generic. Registration plates use real Rajasthan RTO prefixes only to look plausible. Driver names are drawn from fixed lists. Facility, stock, bed, doctor and diagnostic rows are also generated (deterministic seeds, `backend/scripts/generate_districts.py` and `generate_logistics.py`) and describe 40 illustrative facilities.
+
+What is real:
+
+- **Routes.** Road geometry and durations: OpenStreetMap contributors, via the public OSRM demo server, fetched once and committed.
+- **Boundaries.** District boundaries: geoBoundaries (ODbL 1.0), simplified ADM2 release for India. The Jaipur Rural district is drawn with the Jaipur district boundary and the map tooltip says so.
+- **Map tiles.** Esri Canvas gray tiles by default (attribution "Tiles (c) Esri"). CARTO tiles are optional via `NEXT_PUBLIC_MAP_TILES=carto`. Both include OpenStreetMap contributors' data.
+
+## Running it on Windows
+
+These notes are for Git Bash or PowerShell on Windows 11. Requirements: Python 3.12 or newer, Node.js 20.9 or newer, and (for the CRM) a Firestore service account.
+
+Two rules matter on this platform:
+
+1. **Use `127.0.0.1`, not `localhost`.** On many Windows machines `localhost` resolves to `::1` first, and a browser WebSocket or EventSource does not fall back to IPv4. Every URL the browser dials must use `127.0.0.1`. The backend binds `0.0.0.0`.
+2. **Use a production build for the dashboard.** `next dev` blocks HMR requests from the `127.0.0.1` origin, so run `npm run build` and then `next start`. `NEXT_PUBLIC_*` variables are inlined at build time: change one and you must rebuild.
+
+### 1. Free the ports (optional)
+
+```powershell
+foreach ($p in 8080,3000,3001) { Get-NetTCPConnection -LocalPort $p -State Listen -ErrorAction SilentlyContinue |
+  ForEach-Object { $id=$_.OwningProcess; Get-CimInstance Win32_Process | Where-Object { $_.ProcessId -eq $id -or $_.ParentProcessId -eq $id } |
+    ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue } } }
 ```
 
----
+Bash `kill` does not reliably stop Windows processes, and a `uvicorn --reload` child can keep its socket after the parent exits, so use this snippet.
 
-## ⏱️ The reallocation loop, visualised
-
-How SwasthyaGrid detects a critical drug shortage, computes a mathematically optimal inter-facility transfer across rural coordinates, and locks the proposal in pending status until approved:
-
-```mermaid
-sequenceDiagram
-    autonumber
-    participant PHC as Rural PHC-18 (Facility)
-    participant Repo as DistrictRepository
-    participant FC as ForecastService
-    participant RC as RecommendationService
-    participant CMO as District Health Officer
-    participant Sibling as Urban PHC-12 (Surplus)
-
-    PHC->>Repo: Morning Telemetry (60 strips Paracetamol, burn=18/day)
-    Repo->>FC: Evaluate Inventory Status
-    FC->>FC: Compute days remaining: 60 / 18 = 3.33 days (High Risk < 5d)
-    FC->>RC: Trigger Shortage Event (Deficit = 5d safety stock - 60 = 30 units)
-    
-    RC->>Repo: Query All District Facilities for Paracetamol
-    Repo-->>RC: PHC-12 holds 650 strips (burn=12/day, surplus = 650 - 60 = 590)
-    RC->>RC: Haversine distance: dist(PHC-18, PHC-12) = 6.2 km
-    RC->>RC: Compute transfer quantity = min(30, 590) = 250 units (standard batch)
-    RC->>RC: Compute Confidence: (90 * 0.4) + Factors(30) + Dist(14) + Safety(10) = 96%
-    RC->>RC: Create Recommendation rec_001 (Status: PENDING)
-    
-    RC-->>CMO: Present Ranked Proposal with Causal Chain (Rainfall, Dengue Cluster, Distance)
-    CMO->>RC: POST /api/v1/recommendations/rec_001/approve
-    RC->>RC: Transition Status -> APPROVED
-    RC-->>PHC: Dispatch Reallocation Order to Logistics Unit
-    RC-->>Sibling: Deduct Outbound Stock from Available Allocation
-```
-
----
-
-## 🔒 Dual-agent isolation & security
-
-Public healthcare systems handle both sensitive administrative logistics and vulnerable public citizen queries. SwasthyaGrid implements strict architectural isolation between administrative operations and public interactions:
-
-```mermaid
-graph LR
-    subgraph "Admin Domain (Authenticated / Private)"
-        Admin[District Administrator] --> HealthAgent
-        HealthAgent --> T1[get_district_overview]
-        HealthAgent --> T2[get_facility_detail]
-        HealthAgent --> T3[get_medicine_stock]
-        HealthAgent --> T4[get_footfall_forecast]
-        HealthAgent --> T5[get_recommendations]
-        HealthAgent --> T6[get_causal_chain]
-    end
-
-    subgraph "Citizen Domain (Public / Zero Internal Access)"
-        Citizen[Rural Citizen / Patient] --> PublicAgent
-        PublicAgent --> P1[get_emergency_guidance]
-        PublicAgent --> P2[find_nearby_phc]
-    end
-
-    style HealthAgent fill:#e8f4f8,stroke:#2980b9,stroke-width:2px
-    style PublicAgent fill:#eafaf1,stroke:#27ae60,stroke-width:2px
-```
-
-### Security Boundaries
-1. **Tool Access Partitioning**: The `PublicAgent` has **zero programmatic access** to internal district inventory, doctor attendance records, bed vacancy logs, or administrative metrics. It cannot query or leak operational state.
-2. **Deterministic Emergency Preemption**: If a citizen query matches life-threatening keywords (e.g., *chest pain*, *snake bite*, *severe haemorrhage*, *unconscious*), the system instantly prepends mandatory **🚨 EMERGENCY — Call 108 immediately** directives and executes clinical first-aid routines without delegating triage judgment to an ungrounded model.
-3. **Zero Hardcoded Secrets**: All runtime credentials (`GEMINI_API_KEY`, `GOOGLE_MAPS_API_KEY`, `FIRESTORE_*`) are resolved at container startup from **Google Secret Manager** or injected as encrypted environment variables in production.
-
----
-
-## ⚙️ Backend deep-dive
-
-### 1. Resilient Dual-Source Persistence (`DistrictRepository`)
-The repository layer ([`backend/app/repositories/district_repository.py`](file:///backend/app/repositories/district_repository.py)) provides uninterrupted operational uptime:
-- **Primary Source**: Connects to Google Cloud Firestore collections (`facilities`, `medicine_stock`, `beds`, `doctors`, `diagnostics`).
-- **Short-TTL Cache (20 Seconds)**: Ingests real-time ground-level updates written by facility staff without flooding Firestore read quotas.
-- **Automatic Fallback Circuit Breaker**: If Firestore credentials are not configured or if network partitions occur, the repository immediately falls back to the bundled seed dataset ([`backend/data/seed_district.json`](file:///backend/data/seed_district.json)). The entire platform remains fully functional with zero setup.
-
-### 2. Haversine Spatial Allocation Math
-The recommendation engine calculates the great-circle distance between coordinates on a spherical Earth:
-
-$$\Delta\sigma = 2 \arcsin \left( \sqrt{\sin^2\left(\frac{\Delta\phi}{2}\right) + \cos(\phi_1)\cos(\phi_2)\sin^2\left(\frac{\Delta\lambda}{2}\right)} \right)$$
-
-$$d = R \cdot \Delta\sigma \quad \text{where } R = 6371\text{ km}$$
-
-Inter-facility candidates are filtered within a default maximum radius ($r \le 15\text{ km}$) and sorted by:
-$$\text{Rank Score} = \text{argmin} \left( \text{distance\_km}, -\text{surplus\_units} \right)$$
-
-### 3. Multi-Factor Confidence Formulation
-Recommendations and forecasts do not emit opaque numbers. Every recommendation confidence score is calculated deterministically via a bounded linear model:
-
-$$\text{Confidence} = \min\left(99, \; 0.40 \cdot C_{\text{forecast}} + S_{\text{factors}} + S_{\text{logistics}} + S_{\text{safety}}\right)$$
-
-Where:
-- $C_{\text{forecast}}$: Raw depletion forecast confidence ($80\% - 95\%$).
-- $S_{\text{factors}}$: Corroborating environmental signals ($\min(|F| \times 10, 30)$ points from weather, disease trends, local outbreaks).
-- $S_{\text{logistics}}$: Geographic proximity score ($\max(0, 20 - \text{distance\_km})$ points).
-- $S_{\text{safety}}$: Source facility safety margin preservation score ($10\text{ pts}$ if surplus remains above 5 days after transfer, else $5\text{ pts}$).
-
----
-
-## 🧪 Testing and evaluation
-
-### Automated Test Suite
-Run the backend verification suite using `pytest`:
+### 2. Backend (port 8080)
 
 ```bash
 cd backend
-pytest tests/ -v
-python test_app.py
-```
-
-The test harness exercises:
-- **Contract & Route Verification**: Ensures standard HTTP 200/404 handling across all facility, forecast, and recommendation endpoints.
-- **Security Headers Enforcement**: Confirms mandatory injection of `X-Content-Type-Options: nosniff`, `Strict-Transport-Security`, `X-Frame-Options: DENY`, and `X-XSS-Protection`.
-- **Fault-Tolerant Fallback**: Proves that when `GEMINI_API_KEY` is omitted, the API responds with a structured 503 fallback message rather than crashing or throwing unhandled exceptions.
-- **Inventory Depletion Precision**: Validates days-to-zero arithmetic across varied consumption rates.
-
-### Operational Benchmark Metrics
-
-| Evaluation Dimension | Benchmark Result | Operational Standard |
-| :--- | :--- | :--- |
-| **Depletion Prediction Accuracy** | **94.2%** across simulated burn curves | Matches real facility depletion within $\pm 0.5$ days |
-| **Spatial Transfer Feasibility** | **100%** within defined road radius | Zero transfers proposed exceeding safety stock floors |
-| **Emergency Condition Preemption** | **100%** trigger rate on life threats | Mandatory 108 helpline routing on all high-risk keywords |
-| **API Response Latency (Cached)** | **< 18ms** (FastAPI async core) | Sub-50ms operational SLA for field connections |
-| **API Response Latency (Cloud Run)** | **140ms - 210ms** warm instance | Sub-second response on low-bandwidth 3G/4G networks |
-| **Zero-Key Operational Integrity** | **100%** dashboard functionality | Complete visual grid works without third-party AI keys |
-
----
-
-## 🚀 Running it locally
-
-### Prerequisites
-- **Python 3.12+**
-- **Node.js 18+** & `npm`
-- *(Optional)* Gemini API key from [Google AI Studio](https://aistudio.google.com)
-- *(Optional)* Google Maps API key with Places API enabled
-
-### 1. Backend Setup
-
-```bash
-# Clone the repository
-git clone https://github.com/harshkawatra11/SwasthyaGrid-HealthTech.git
-cd SwasthyaGrid-HealthTech/backend
-
-# Create and activate virtual environment
 python -m venv .venv
-
-# On Windows (PowerShell):
-.\.venv\Scripts\Activate.ps1
-# On macOS / Linux:
-source .venv/bin/activate
-
-# Install dependencies
+source .venv/Scripts/activate        # PowerShell: .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
-
-# Configure environment (optional - runs in mock mode if omitted)
-cp .env.example .env
-
-# Start FastAPI development server
-uvicorn app.main:app --reload --port 8080
+cp .env.example .env                 # then fill in the keys you have; all are optional
+python -m uvicorn app.main:app --host 0.0.0.0 --port 8080
 ```
 
-Interactive OpenAPI documentation will be live at **[http://localhost:8080/docs](http://localhost:8080/docs)**.
+With no keys the backend runs entirely on the bundled seed data. OpenAPI docs are at `http://127.0.0.1:8080/docs`. Logistics state is written to `backend/.runtime/` (ignored by git); delete that folder, or call `POST /api/v1/logistics/admin/reset`, to start the scenario again.
 
-### 2. Frontend Setup
+### 3. Dashboard (port 3000)
 
-```bash
-cd ../frontend
-
-# Install dependencies
-npm install
-
-# Configure local environment variables
-cp .env.example .env.local
-
-# Launch Next.js development server
-npm run dev
-```
-
-Open **[http://localhost:3000](http://localhost:3000)** in your browser.
-
-> [!NOTE]
-> The full visual dashboard, Leaflet GIS map, inventory charts, bed occupancy trackers, and recommendation engines run **100% offline out of the box** using the bundled district seed. Entering a `GEMINI_API_KEY` activates natural language explanations in the "Ask SwasthyaGrid" console and conversational citizen triage.
-
----
-
-## 🌐 Deployment
-
-### Production Topology
-
-| Subsystem | Hosting Platform | Region / Runtime | Production URL |
-| :--- | :--- | :--- | :--- |
-| **Frontend Command Center** | Vercel Edge Network | Global CDN (Node.js 18+) | [swasthyagrid.vercel.app](https://swasthyagrid.vercel.app) |
-| **Core REST API** | Google Cloud Run | `asia-south1` (Mumbai) | [Cloud Run Endpoint](https://swasthyagrid-api-616415200021.asia-south1.run.app/docs) |
-| **Operational Store** | Google Cloud Firestore | Native Multi-Region | Project `swasthyagrid-ai-54886` |
-| **Secret Management** | Google Secret Manager | Encrypted Container Injection | Zero committed secrets |
-
-### Deploy Backend to Google Cloud Run
-
-```bash
-# Authenticate and set GCP project
-gcloud auth login
-gcloud config set project YOUR_PROJECT_ID
-
-# Build container image via Google Cloud Build
-gcloud builds submit --tag gcr.io/YOUR_PROJECT_ID/swasthyagrid-api:latest ./backend
-
-# Deploy serverless service to Cloud Run
-gcloud run deploy swasthyagrid-api \
-  --image gcr.io/YOUR_PROJECT_ID/swasthyagrid-api:latest \
-  --platform managed \
-  --region asia-south1 \
-  --allow-unauthenticated \
-  --set-env-vars="ENVIRONMENT=production,GOOGLE_CLOUD_PROJECT=YOUR_PROJECT_ID" \
-  --set-secrets="GEMINI_API_KEY=gemini-api-key:latest"
-```
-
-### Deploy Frontend to Vercel
+Create `frontend/.env.local` (see the variable table below), then:
 
 ```bash
 cd frontend
-vercel --prod
+npm install
+npm run build
+npx next start -p 3000
 ```
 
-Configure `NEXT_PUBLIC_API_URL` to point to your Cloud Run URL in the Vercel project settings.
+Open `http://127.0.0.1:3000`. Stop any running `next dev` before `next build`, and do not delete `.next` while a dev server is running.
 
----
+### 4. CRM (port 3001, separate repository)
 
-## ⚖️ What this system decides, what it merely proposes
+```bash
+cd ai-healthcare-crm
+npm install
+npm run dev            # dev script is `next dev -p 3001`
+```
 
-| Operational Concern | Deterministic Engine | Language Model |
-| :--- | :--- | :--- |
-| **Days to Stockout Calculation** | **Decides** ($Units / DailyBurn$) | Never |
-| **Bed Occupancy Saturation Risk** | **Decides** (Deterministic percentage thresholds) | Never |
-| **Eligible Surplus Facility Candidates** | **Decides** (Haversine distance $\le 15\text{ km}$ & surplus above safety stock) | Never |
-| **Transfer Quantity Rebalancing** | **Decides** ($\min(Deficit, Surplus)$) | Never |
-| **Recommendation Confidence Score** | **Decides** (4-factor weighted formula) | Never |
-| **State Transitions (Approve / Reject / Modify)** | **Requires Human CMO Signature** | Never |
-| **Emergency 108 Helpline Routing** | **Decides** (Rule-based keyword detector) | Never |
-| **Explanation of Causal Factors** | Provides structured telemetry factors | **Synthesizes natural-language briefing** |
-| **Administrative Q&A ("Ask SwasthyaGrid")** | Executes service tool calls | **Phrases operational analysis** |
-| **Citizen Plain-Language Triage** | Bounds safety protocols and helplines | **Provides empathetic, simplified phrasing** |
+The CRM needs `FIREBASE_SERVICE_ACCOUNT`, `SESSION_SECRET`, `SWASTHYAGRID_API_BASE` and `SWASTHYAGRID_SERVICE_TOKEN` in its `.env.local`. The service token must equal the backend's `LOGISTICS_SERVICE_TOKEN`. Generate one with `python -c "import secrets; print(secrets.token_urlsafe(32))"`. Do not paste it into chat, logs or commits.
 
-> [!IMPORTANT]
-> **The Clinical & Operational Rule**: In public health, ungrounded probabilistic autonomy is dangerous. Statistical models and rule engines compute the numbers; human medical officers retain absolute authority over approvals; large language models strictly explain and translate.
+### 5. Health checks
 
----
+```bash
+curl -s -o /dev/null -w "%{http_code}\n" http://127.0.0.1:8080/health
+curl -s -o /dev/null -w "%{http_code}\n" http://127.0.0.1:3000/command
+curl -s -o /dev/null -w "%{http_code}\n" http://127.0.0.1:3001/
+curl -N --max-time 3 http://127.0.0.1:8080/api/v1/logistics/stream      # should print "event: tick"
+```
 
-## 📋 What is covered, and what is not
+Start each server in its own command; chaining `sleep` and `curl` in the same command that launches a background server can hang the shell.
 
-- **Facility Types Covered**: Primary Health Centres (PHCs) and Community Health Centres (CHCs).
-- **Core Drug Formularies Tracked**: Critical emergency medications (Anti-Snake Venom, Anti-Rabies Vaccine, Oxytocin, Adrenaline, Tetanus Toxoid) and high-volume outpatient supplies (ORS packets, Paracetamol, Amoxicillin).
-- **Simulated District Footprint**: Tested across the Jaipur Rural District health network (Rajasthan), encompassing 8 core facilities with varying geographic, demographic, and seasonal profiles.
-- **Disclaimer**: SwasthyaGrid is an assistive operational decision-support system. It does not replace clinical judgment or official state medical procurement directives. All transfer recommendations require formal sign-off by an authorized medical officer before physical dispatch.
+## Environment variables
 
----
+None of the values below are real. Never commit `.env*` files. `backend/.env`, `frontend/.env.local` and the CRM's `.env.local` are gitignored.
 
-## 📜 License
+### `backend/.env`
 
-Distributed under the Apache License, Version 2.0. See [`LICENSE`](LICENSE) for complete terms.
+`backend/.env.example` lists every key with an empty value.
 
-<div align="center">
+| Key | Default | Purpose |
+|---|---|---|
+| `GEMINI_API_KEY` | none | Typed Ask agent |
+| `SARVAM_API_KEY` | none | Voice STT, LLM, TTS and the AI briefing |
+| `SARVAM_CHAT_MODEL` | `sarvam-105b-conversations` | Voice and briefing model |
+| `SARVAM_STT_MODEL` | `saaras:v3-realtime` | Realtime STT |
+| `SARVAM_TTS_MODEL` | `bulbul:v3` | TTS |
+| `SARVAM_SPEAKER` | `simran` | TTS voice |
+| `SARVAM_TTS_MODE` | `ws` | TTS transport, `ws` or `rest` |
+| `SARVAM_STREAM_WITH_TOOLS` | `true` | Single streaming planning call that can carry tool calls |
+| `DATA_SOURCE` | `auto` | `auto`, `seed` or `firestore` |
+| `FIREBASE_SERVICE_ACCOUNT` | none | Base64 or raw service-account JSON for Firestore |
+| `FIREBASE_SERVICE_ACCOUNT_FILE` | none | Alternative: path to a service-account JSON file |
+| `LOGISTICS_TIME_SCALE` | `60` | Simulated seconds per real second (`1` is real time) |
+| `LOGISTICS_SCENARIO_START` | none | Fixed scenario start; otherwise today 08:30 IST at first boot |
+| `LOGISTICS_AUTO_POD_MINUTES` | `240` | Auto-confirm routine and restock shipments after arrival; `0` disables |
+| `LOGISTICS_BACKGROUND_TRAFFIC` | `true` | Generate routine and restock shipments |
+| `LOGISTICS_TICK` | `true` | Tick loop and SSE (tests set `false`) |
+| `LOGISTICS_ADMIN_ENABLED` | `true` locally | Time scale and reset endpoints |
+| `LOGISTICS_SERVICE_TOKEN` | none | Shared secret for CRM proof-of-delivery calls; POD returns 503 when empty |
+| `LOGISTICS_STATE_PATH` | `.runtime/logistics_state.json` | JSON state store |
+| `CORS_ORIGINS` | localhost and 127.0.0.1 on ports 3000 and 3001 | Allowed origins |
+| `CORS_ORIGIN_REGEX` | `http://(localhost\|127\.0\.0\.1):30\d\d` (unset in production) | Dev origins, used by CORS and the voice origin check |
+| `ENVIRONMENT` | `local` | `production` disables admin endpoints and the dev origin regex |
 
-*Because a district health network should anticipate a stock-out three days before it happens, not three days after.*
+### `frontend/.env.local`
 
-</div>
+| Key | Example | Purpose |
+|---|---|---|
+| `NEXT_PUBLIC_API_BASE` | `http://127.0.0.1:8080` | REST and SSE base (IPv4 on purpose). Inlined at build time. |
+| `NEXT_PUBLIC_VOICE_WS_URL` | `ws://127.0.0.1:8080/ws/voice` | Voice socket. Inlined at build time. |
+| `NEXT_PUBLIC_MAP_TILES` | `esri` | `esri` (default) or `carto`. Inlined at build time. |
+| `GEMINI_API_KEY` | none | `/api/public-ask` only (server side) |
+
+### `ai-healthcare-crm/.env.local`
+
+| Key | Example | Purpose |
+|---|---|---|
+| `FIREBASE_SERVICE_ACCOUNT` | none | Admin SDK credentials |
+| `SESSION_SECRET` | none | Session JWT signing |
+| `SWASTHYAGRID_API_BASE` | `http://127.0.0.1:8080` | Backend base for server-to-server calls |
+| `SWASTHYAGRID_SERVICE_TOKEN` | same as backend `LOGISTICS_SERVICE_TOKEN` | Proof-of-delivery authentication |
+
+## Demo script (about four minutes)
+
+At the default 60x clock the full loop fits in roughly four minutes.
+
+1. `/command`: "Forty facilities across five districts. Ten are critical right now; the map and the matrix show where and why." Hover the Kota district and open its row in the league table.
+2. Topbar voice button, `/voice`: ask "Kota mein abhi kya haal hai?" Point out the orb colour change, the streamed Hinglish answer, the "Checking Kota district data" trace and the fact card.
+3. Ask "Which district needs attention first, and why?" in English, then interrupt mid-answer by speaking. The orb and the audio stop.
+4. `/recommendations`: approve the critical ARV replenishment for the Kota facility. A toast appears and a shipment chip shows up.
+5. `/supply`: the new shipment is `loading` at DDW Kota and then leaves. Other trucks move across the state and delayed shipments are orange.
+6. Open the tracking page: ETA countdown, stepper, driver and reefer temperature.
+7. Back on voice: "ARV Kota ki PHC tak kab pahunchegi?" returns the live ETA.
+8. Raise the sim clock chip to 120x until the shipment is `arrived`.
+9. CRM at `http://127.0.0.1:3001`, logged in as that PHC (or as `phc-rural-14` for the pre-arrived scenario shipment): open "Incoming deliveries" and confirm receipt.
+10. Dashboard: a live toast reports the risk improving from Critical, and the KPIs and map update without a reload. Close on the AI briefing card.
+
+Step 9 needs a CRM login for the receiving facility. See [Known limitations](#known-limitations) for which logins exist.
+
+## Testing and evaluation
+
+Current counts at the time of writing: 348 backend tests and 272 frontend tests.
+
+```bash
+# backend (from backend/, venv active)
+python -m ruff check .
+python -m pytest -q                          # 348 tests; DATA_SOURCE=seed is the safe default
+
+# frontend (from frontend/, stop any dev server first)
+npm run lint
+npm run typecheck
+npm run test                                 # vitest, 272 tests
+npm run build
+npm run gen:api                              # regenerate OpenAPI types from a running backend
+```
+
+Playwright end-to-end specs live under `frontend/e2e` (`c5/no-raw-ids.spec.ts`, `f1/command.spec.ts`, `f1/recommendations.spec.ts`, `f2/pages.spec.ts`). Run them with `npm run e2e` against a running backend and a production frontend build. The `e2e/voice` and `e2e/d1`, `e2e/d2` folders hold live-gate and screenshot scripts run with `node`.
+
+Voice evaluation and latency (these call the paid Sarvam API):
+
+```bash
+cd backend
+python -m evals.voice_eval                   # 40 cases, real Sarvam chat, text-only turns
+python -m evals.voice_latency_probe          # opens the real WebSocket, 5 typed turns with TTS
+```
+
+Endpoint sweep, which times every GET endpoint against a running backend and exits non-zero if one fails or is slow:
+
+```bash
+python scripts/endpoint_sweep.py --base http://127.0.0.1:8080
+```
+
+Unit and integration tests never call Sarvam. Live calls happen only in the two evaluation commands above.
+
+## What the system decides and what it proposes
+
+| Concern | Deterministic engine | Language model |
+|---|---|---|
+| Days of cover, stock-out risk | Decides | Never |
+| Bed occupancy risk | Decides | Never |
+| Transfer and replenishment candidates, quantities, priority | Decides | Never |
+| Recommendation confidence score | Decides | Never |
+| Shipment status, position and ETA | Derived from the simulated trip | Never |
+| Approve, modify, reject | Requires a human | Never |
+| Briefings, Ask answers, spoken answers | Supplies numbers through tools | Phrases the answer |
+
+Language models never change state. The voice agent is read-only by design.
+
+## Known limitations
+
+- **All logistics data is simulated.** Fleet, drivers, warehouses, shipment history, on-time rates and incidents are generated. Facility stock, beds, doctors and diagnostics are also generated seed data. None of it is a real statistic.
+- **Firestore is not seeded with the 40 facilities.** The upsert of the 40-facility dataset into Firestore and the creation of 40 facility logins in the CRM were not applied, because both write to a live database and need explicit approval. The backend therefore runs with `DATA_SOURCE=seed`. In that mode the backend applies delivered stock itself (a stock overlay) and returns `stock_applied_by: "backend_overlay"`. The CRM only has its earlier logins (for example `phc-rural-14`, `phc-sector-12`, `chc-east` and the district admin), so a facility-specific CRM demo works today only for those facilities.
+- **The CRM loop was verified against mocks and fakes.** The CRM's own tests use a fake Firestore and a mock backend. The end-to-end loop with a real Firestore, a real service token and a browser depends on the state of your Firestore data.
+- **Voice audio was verified by frame counts, not by ear.** The automated live gate confirms that PCM audio frames arrive, are scheduled for playback, and that Stop halts playback within a millisecond or so of the click. Nobody listened to the audio as part of the build, so voice quality, pronunciation of Hindi and Hinglish text, and echo behaviour on real speakers are untested. The glass orb was measured at about 144 fps in a headed browser on an integrated GPU; headless browsers use software WebGL and are far slower.
+- **Voice evaluation results.** Full details are in `docs/v2-reports/final-audit.md`. The latest full run of the 40 case evaluation scored 37 of 40. Two of the three misses were a too strict test (the model resolved the spoken name with `get_facility_status` instead of `find_facility`) and one was a real ungrounded answer to a Hindi question, which led to a stricter prompt rule; those three cases pass on a targeted rerun, but a second full run has not been made. Latency over five typed turns: 836 ms median to first audio without tools and 1.25 s with tools, which meets two of the three plan targets and misses the third (first audio of any kind on tool turns, 1.2 s) by 49 ms. Latency depends on Sarvam response times and varies between runs.
+- **Performance remediation.** An earlier build froze under sustained running because the planner rebuilt fleet state for every queued shipment on every tick and background traffic never stopped. It now uses an active set (terminal shipments leave per-tick work), a planner pass that is built once and throttled (at most every 5 real seconds, top 25 queued by priority), a bound of 6 unassigned routine shipments per district with auto-cancel of stale routine and restock loads after 3 sim hours, throttled saves with an archive file, `tick_ms` metrics on `/metrics`, and an automatic scenario reset when a saved state is more than 3 sim days ahead or holds more than 1,500 shipments. A 10 minute soak at 120x showed tick p95 under 8 ms. A longer soak has not been run, and the planner cap can starve lower priority loads while 25 blocked loads sit ahead of them.
+- **No lateral transfers on the seed data.** A district warehouse van must drive to the source facility first, so a lateral transfer never beats a direct warehouse replenishment by the required 30 minutes. The lateral path exists and is tested but does not appear in the demo data.
+- **State is in one process.** Logistics state lives in memory with a JSON file behind it. Running several backend instances would give each its own world. If you deploy the backend to Cloud Run, use `--max-instances 1`. The v2 build has only been run locally; it is not deployed. The earlier Vercel and Cloud Run deployment predates v2.
+- **CARTO tiles** showed a watermark without a key during testing, so Esri is the default.
+- **OSRM routes** are from the public demo server. All 365 routes fetched successfully, none are synthetic.
+
+## Further reading
+
+- [`docs/v2-architecture.md`](docs/v2-architecture.md): logistics domain model and voice pipeline, for engineers joining the project.
+- `docs/v2-reports/`: per-lane build reports, including deviations from the plan.
+- `docs/v2-shots/`: screenshots of the built pages.
+- `docs/00-vision.md` to `docs/10-demo-script.md`: the original v1 design documents. Parts of them describe the earlier single-district prototype.

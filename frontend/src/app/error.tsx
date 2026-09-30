@@ -1,6 +1,5 @@
 'use client';
 
-import { Fraunces, IBM_Plex_Sans } from "next/font/google";
 import { useEffect } from 'react';
 import { AlertCircle, RefreshCw } from 'lucide-react';
 

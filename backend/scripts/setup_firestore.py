@@ -13,7 +13,7 @@ account with roles/datastore.user) and GOOGLE_CLOUD_PROJECT set.
 import json
 from pathlib import Path
 
-SEED_PATH = Path(__file__).resolve().parents[1] / "data" / "seed_district.json"
+SEED_PATH = Path(__file__).resolve().parents[1] / "data" / "seed_districts.json"
 
 
 def main() -> None:
@@ -24,7 +24,9 @@ def main() -> None:
 
     db = firestore.Client()
 
-    db.collection("districts").document(data["district"]["id"]).set(data["district"])
+    for district in data["districts"]:
+        db.collection("districts").document(district["id"]).set(district)
+    print(f"Seeded {len(data['districts'])} districts.")
 
     for facility in data["facilities"]:
         db.collection("facilities").document(facility["id"]).set(facility)

@@ -1,4 +1,7 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
+
+from app.api.deps import get_logistics_service
+from app.logistics.service import LogisticsService
 
 router = APIRouter(tags=["health"])
 
@@ -14,5 +17,6 @@ def ready():
 
 
 @router.get("/metrics")
-def metrics():
-    return {"uptime": "ok", "service": "swasthyagrid-api"}
+def metrics(service: LogisticsService = Depends(get_logistics_service)):
+    """Liveness plus the logistics tick budget (`tick_ms` last and p95 over 60 ticks)."""
+    return {"uptime": "ok", "service": "swasthyagrid-api", **service.metrics_snapshot()}
