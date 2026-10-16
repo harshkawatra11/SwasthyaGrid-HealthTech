@@ -2,7 +2,7 @@
 
 ## 2026-10-17 — More simultaneous dispatches across all districts
 
-Expanded visitor-only synthetic fleets to eight available district trucks and on-shift drivers each. Every district opens with eight moving shipments, 40 network-wide, rotating destinations across its facilities with staggered progress at 10x. Operational fleet unaffected. Regression suite: 79 tests pass; deployment verification pending.
+Expanded visitor-only synthetic fleets to eight available district trucks and on-shift drivers each. Every district opens with eight moving shipments, 40 network-wide, rotating destinations across its facilities with staggered progress at 10x. Operational fleet unaffected. Regression suite: 79 tests pass; Ruff passes. Deployed Cloud Run revision swasthyagrid-api-00005-kl8 at 100% traffic. Production positions API verified 40 total and exactly eight each in Jaipur Rural, Alwar, Bikaner, Udaipur and Kota. GitHub code commit cd1bf68; Vercel deployment succeeded.
 
 ## 2026-10-16 — Dispatch replay
 
