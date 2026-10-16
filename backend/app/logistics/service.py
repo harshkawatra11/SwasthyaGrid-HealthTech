@@ -91,6 +91,7 @@ class LogisticsService:
         auto_pod_minutes: int | None = None,
         time_scale: float | None = None,
         scenario_start: datetime | None = None,
+        demo_replay: bool = False,
     ):
         self.repo = repo
         self.forecast = forecast
@@ -111,6 +112,7 @@ class LogisticsService:
             self.settings.logistics_time_scale if time_scale is None else time_scale
         )
         self._forced_start = scenario_start
+        self.demo_replay = demo_replay
         self.clock = clock or SimClock(
             anchor_real=time.time(), anchor_sim=today_0830_ist(), scale=self._initial_scale
         )

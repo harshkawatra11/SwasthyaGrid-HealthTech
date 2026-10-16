@@ -39,6 +39,7 @@ def visit_world(key: str) -> tuple[LogisticsService, StreamHub]:
             recs = RecommendationService(repo, forecast)
             service = LogisticsService(
                 repo, forecast, recs, MemoryStateStore(), settings=settings,
+                demo_replay=True, time_scale=10,
                 scenario_start=(parse_iso(settings.logistics_scenario_start)
                                 if settings.logistics_scenario_start else None),
             )

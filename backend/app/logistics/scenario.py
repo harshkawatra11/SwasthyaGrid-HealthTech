@@ -40,7 +40,10 @@ def _noncold() -> list[str]:
 # --------------------------------------------------------------------------- shipment makers
 
 
-def make_routine(svc, district_id: str, created_at: datetime, rng: random.Random) -> Shipment | None:
+def make_routine(
+    svc, district_id: str, created_at: datetime, rng: random.Random,
+    destination_id: str | None = None,
+) -> Shipment | None:
     """A routine, non-cold-chain top-up from the district warehouse (never uses a reefer)."""
     facilities = sorted(svc.repo.facilities_in(district_id), key=lambda f: f["id"])
     if not facilities:
@@ -59,7 +62,8 @@ def make_routine(svc, district_id: str, created_at: datetime, rng: random.Random
         return sorted(out)
 
     needy = [f for f in facilities if low_rows(f["id"])]
-    dest = rng.choice(needy or facilities)
+    dest = (next(f for f in facilities if f["id"] == destination_id)
+            if destination_id else rng.choice(needy or facilities))
     picks = low_rows(dest["id"])[:2]
     if not picks:
         rows = [
@@ -292,7 +296,10 @@ def build_initial_scenario(svc, start: datetime, seed: int) -> None:
     bg["routine_slot"] = 0
     bg["restock_slot"] = 0
 
-    plan: list[Any] = [("flight", p) for p in IN_FLIGHT_PROGRESS] + [("loading", 0.0)] * LOADING_COUNT
+    if svc.demo_replay:
+        _demo_departures(svc, alloc, start, rng, districts)
+    plan: list[Any] = ([] if svc.demo_replay else
+                       [("flight", p) for p in IN_FLIGHT_PROGRESS] + [("loading", 0.0)] * LOADING_COUNT)
     cursor = 0
     for kind, progress in plan:
         s = v = d = None
@@ -332,6 +339,29 @@ def build_initial_scenario(svc, start: datetime, seed: int) -> None:
 
     _arrived_replenishment(svc, alloc, start)
     _arrived_routine(svc, alloc, start, rng, districts)
+
+
+def _demo_departures(svc, alloc: _Allocator, start: datetime, rng, districts: list[str]) -> None:
+    """Use actual available fleet capacity, with distinct routes in every district."""
+    for district_id in districts:
+        origin = master.ddw_for_district(district_id)
+        facilities = sorted(svc.repo.facilities_in(district_id), key=lambda f: f["id"])
+        index = 0
+        while facilities and alloc.has_capacity(origin, start):
+            dest = facilities[index % len(facilities)]["id"]
+            shipment = make_routine(svc, district_id, start, rng, destination_id=dest)
+            if shipment is None:
+                break
+            pair = alloc.take(origin, shipment, start)
+            if pair is None:
+                break
+            _place_in_flight(svc, shipment, *pair, start, 0.08 + index * 0.10)
+            _stamp(shipment, shipment.trip.planned_start)
+            svc.approve_shipment(
+                shipment, ROUTINE_ACTOR, shipment.created_at + timedelta(minutes=2), plan=False,
+            )
+            shipment.trip.assigned_at = shipment.approved_at
+            index += 1
 
 
 def _arrived_replenishment(svc, alloc: _Allocator, start: datetime) -> None:

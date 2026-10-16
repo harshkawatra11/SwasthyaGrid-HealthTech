@@ -35,3 +35,20 @@ def test_dispatch_endpoints_accept_visit_and_reject_invalid_id():
         assert client.get("/api/v1/logistics/clock?demo_session=bad").status_code == 400
     finally:
         _visits.clear()
+
+
+def test_each_district_opens_with_multiple_distinct_moving_shipments():
+    _visits.clear()
+    try:
+        service, _ = visit_world("dense-opening-visitor-123")
+        assert service.clock.scale == 10
+        for district in service.repo.districts:
+            moving = [s for s in service.active_shipments()
+                      if s.district_id == district["id"] and s.status in ("in_transit", "delayed")]
+            assert len(moving) >= 2, district["id"]
+            if district["id"] == "district_udaipur":
+                assert len(moving) == 4
+            assert len({s.destination_facility_id for s in moving}) == len(moving)
+            assert len({s.trip.vehicle_id for s in moving}) == len(moving)
+    finally:
+        _visits.clear()
