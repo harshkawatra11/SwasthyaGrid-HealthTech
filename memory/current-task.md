@@ -2,7 +2,7 @@
 
 ## 2026-10-17 — Demo speed controls and shipment colors
 
-Private visitor sessions may now change speed (including 120x) and reset in production; the shared operational world still rejects these admin requests. Map dot and label-edge colors identify individual shipments, while badges retain status colors; a map caption explains this. Backend isolation/security regression tests and frontend identity-color tests pass. Rollout in progress.
+Private visitor sessions may now change speed (including 120x) and reset in production; the shared operational world still rejects these admin requests. Map dot and label-edge colors identify individual shipments, while badges retain status colors; a map caption explains this. Backend isolation/security regression tests and frontend identity-color tests pass. Deployed backend revision swasthyagrid-api-00006-4hl and frontend code 9f0e32c. Live Playwright click on 120x returned HTTP 200 and updated the clock to x120; the map displayed eight distinct marker colors. CI passed. Shared-world admin requests still return 403.
 
 ## 2026-10-17 — More simultaneous dispatches across all districts
 
