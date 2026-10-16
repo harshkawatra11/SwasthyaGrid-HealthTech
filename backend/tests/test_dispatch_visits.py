@@ -52,3 +52,27 @@ def test_each_district_opens_with_multiple_distinct_moving_shipments():
             assert len({s.trip.vehicle_id for s in moving}) == len(moving)
     finally:
         _visits.clear()
+
+
+def test_production_speed_controls_are_private_to_the_visit(monkeypatch):
+    from app.core.config import get_settings
+
+    monkeypatch.setenv("ENVIRONMENT", "production")
+    monkeypatch.setenv("LOGISTICS_ADMIN_ENABLED", "false")
+    get_settings.cache_clear()
+    _visits.clear()
+    try:
+        client = TestClient(app)
+        base = "/api/v1/logistics"
+        first = "?demo_session=speed-first-visitor-123"
+        other = "?demo_session=speed-other-visitor-123"
+        changed = client.post(base + "/admin/time-scale" + first, json={"scale": 120})
+        assert changed.status_code == 200
+        assert changed.json()["scale"] == 120
+        assert client.get(base + "/clock" + other).json()["scale"] == 10
+        assert client.post(base + "/admin/time-scale", json={"scale": 120}).status_code == 403
+        assert client.post(base + "/admin/reset" + first, json={}).status_code == 200
+        assert client.post(base + "/admin/reset").status_code == 403
+    finally:
+        _visits.clear()
+        get_settings.cache_clear()

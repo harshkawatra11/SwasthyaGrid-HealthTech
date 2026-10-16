@@ -54,7 +54,10 @@ def require_service_token(x_service_token: Annotated[str | None, Header()] = Non
         raise ApiError(401, "Invalid service token", "invalid_service_token")
 
 
-def require_admin() -> None:
+def require_admin(request: Request) -> None:
+    # Resolve/validate a private world, never the operational singleton.
+    if request.query_params.get("demo_session") and get_logistics_service(request).demo_replay:
+        return
     settings = get_settings()
     if not settings.logistics_admin_enabled or settings.environment == "production":
         raise ApiError(403, "Admin endpoints are disabled", "admin_disabled")

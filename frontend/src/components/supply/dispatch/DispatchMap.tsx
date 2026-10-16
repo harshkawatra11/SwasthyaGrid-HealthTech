@@ -85,6 +85,7 @@ export function DispatchMap({
 
   return (
     <div ref={shellRef} className={cn("relative overflow-hidden rounded-lg border border-border bg-surface-1", fullscreen && "rounded-none")}>
+      <p className="border-b border-border px-3 py-1.5 text-[11px] text-muted">Dot and label-edge colors identify shipments. Badges show delivery status.</p>
       <style>{`.dispatch-map .leaflet-control-zoom{display:none}.dispatch-map .leaflet-control-attribution{background:color-mix(in srgb,var(--surface-1) 70%,transparent);color:var(--text-faint);font-size:10px}.dispatch-map .leaflet-control-attribution a{color:var(--text-muted)}`}</style>
       <div className="dispatch-map">
         <BaseMapClient height={height} fitPoints={fitPoints} scrollWheelZoom className="rounded-none border-0">

@@ -24,11 +24,21 @@ const BOX =
  */
 export type ChipOffset = { dx: number; dy: number; w: number; h: number };
 
+const SHIPMENT_COLORS = ["#dc5252", "#15966a", "#d5961b", "#1699a6", "#b66aa5", "#d57436", "#6882ba", "#9a8546"];
+
+/** Consecutive seeded shipments get distinct identities; status is a separate badge. */
+export function shipmentColor(id: string): string {
+  const suffix = id.match(/\d+$/)?.[0];
+  const index = suffix ? Number(suffix) : [...id].reduce((n, c) => n + c.charCodeAt(0), 0);
+  return SHIPMENT_COLORS[index % SHIPMENT_COLORS.length];
+}
+
 export function chipHtml(id: string, status: ShipmentStatus, opts: { selected?: boolean; live?: boolean; stack?: number; off?: ChipOffset }): string {
   const color = statusVar(status);
+  const identity = shipmentColor(id);
   const stack = opts.stack ?? 0;
   const dot = opts.live
-    ? `<span style="position:absolute;left:-5px;top:-5px;width:10px;height:10px;border-radius:50%;background:${color};border:2px solid var(--bg);box-shadow:0 0 0 3px ${tint(color, 28)}"></span>`
+    ? `<span style="position:absolute;left:-5px;top:-5px;width:10px;height:10px;border-radius:50%;background:${identity};border:2px solid var(--bg);box-shadow:0 0 0 3px ${tint(identity, 28)}"></span>`
     : `<span style="position:absolute;left:-3px;top:-3px;width:6px;height:6px;border-radius:50%;background:var(--text-faint);border:1px solid var(--bg)"></span>`;
   const off = opts.off;
   const lead = leaderSvg(off);
@@ -36,7 +46,7 @@ export function chipHtml(id: string, status: ShipmentStatus, opts: { selected?: 
     `<div style="position:absolute;left:0;top:0;pointer-events:none">${lead}${dot}` +
     `<div data-chip style="${off ? `transform:translate(${off.dx}px,${off.dy}px);` : ""}pointer-events:auto;cursor:pointer;position:absolute;left:-1px;bottom:${6 + stack}px;display:inline-flex;align-items:center;gap:5px;white-space:nowrap;` +
     `padding:2px 5px 2px 6px;border-radius:5px;background:color-mix(in srgb, var(--surface-1) 86%, transparent);backdrop-filter:blur(2px);` +
-    `border:1px solid ${opts.selected ? "var(--brand)" : "var(--border-strong)"};box-shadow:0 2px 8px rgb(0 0 0 / .25);` +
+    `border:1px solid ${opts.selected ? "var(--brand)" : "var(--border-strong)"};border-left:3px solid ${identity};box-shadow:0 2px 8px rgb(0 0 0 / .25);` +
     `font-family:var(--font-geist-mono),ui-monospace,monospace;font-size:10.5px;line-height:15px;color:var(--text-muted)">` +
     `${BOX}<span style="color:var(--text)">${esc(id)}</span>` +
     `<span style="padding:0 5px;border-radius:3px;background:${tint(color, 16)};color:${color};font-weight:500">${esc(STATUS_LABEL[status])}</span></div></div>`
