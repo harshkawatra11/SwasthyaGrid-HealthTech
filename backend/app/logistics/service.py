@@ -120,6 +120,8 @@ class LogisticsService:
 
         self.vehicles: list[Vehicle] = master.vehicles()
         self.drivers: list[Driver] = master.drivers()
+        if self.demo_replay:
+            scenario.expand_demo_fleet(self)
         self.vehicle_by_id = {v.id: v for v in self.vehicles}
         self.driver_by_id = {d.id: d for d in self.drivers}
         self.warehouses = {w["id"]: w for w in master.warehouses()}

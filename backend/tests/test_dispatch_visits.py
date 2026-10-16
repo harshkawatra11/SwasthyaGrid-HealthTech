@@ -45,10 +45,10 @@ def test_each_district_opens_with_multiple_distinct_moving_shipments():
         for district in service.repo.districts:
             moving = [s for s in service.active_shipments()
                       if s.district_id == district["id"] and s.status in ("in_transit", "delayed")]
-            assert len(moving) >= 2, district["id"]
-            if district["id"] == "district_udaipur":
-                assert len(moving) == 4
-            assert len({s.destination_facility_id for s in moving}) == len(moving)
+            assert len(moving) == 8, district["id"]
+            assert len({s.destination_facility_id for s in moving}) == min(
+                8, len(service.repo.facilities_in(district["id"])),
+            )
             assert len({s.trip.vehicle_id for s in moving}) == len(moving)
     finally:
         _visits.clear()

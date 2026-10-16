@@ -1,5 +1,9 @@
 # Current Task
 
+## 2026-10-17 — More simultaneous dispatches across all districts
+
+Expanded visitor-only synthetic fleets to eight available district trucks and on-shift drivers each. Every district opens with eight moving shipments, 40 network-wide, rotating destinations across its facilities with staggered progress at 10x. Operational fleet unaffected. Regression suite: 79 tests pass; deployment verification pending.
+
 ## 2026-10-16 — Dispatch replay
 
 Opening-density follow-up: visitor worlds now use available trucks and on-shift drivers on distinct facility routes: four moving shipments in Udaipur, two to four per district. Visitor replay scale is 10x to keep the opening fleet visible longer. Ordinary operational seeding is unchanged. Verified with 79 backend tests plus Ruff; deployed to production. Live Playwright check of `/supply?d=district_udaipur` confirmed four moving shipments, 08:30 IST at 10x, and no offline banner. Production positions API independently returned four vehicle coordinates.

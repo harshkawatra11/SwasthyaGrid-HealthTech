@@ -26,6 +26,29 @@ IN_FLIGHT_PROGRESS = [0.10 + i * (0.75 / 9) for i in range(10)]  # 10% ... 85%
 LOADING_COUNT = 4
 SCHEDULED_OFFSETS_MIN = (40, 60, 90)
 PHC_WITH_CRM_LOGIN = "phc_18"
+DEMO_TRUCKS_PER_DISTRICT = 8
+
+
+def expand_demo_fleet(svc) -> None:
+    """Supplement only the synthetic visitor world, never the operational fleet."""
+    for district in svc.repo.districts:
+        origin = master.ddw_for_district(district["id"])
+        trucks = [v for v in svc.vehicles if v.home_warehouse_id == origin
+                  and not v.cold_chain and v.status != "maintenance"]
+        crew = [d for d in svc.drivers if d.home_warehouse_id == origin
+                and planner.in_shift(d, svc._forced_start or svc.clock.anchor_sim)]
+        if not trucks or not crew:
+            continue
+        for index in range(len(trucks), DEMO_TRUCKS_PER_DISTRICT):
+            ident = f"DEMO-{district['id']}-{index + 1}"
+            svc.vehicles.append(trucks[0].model_copy(update={
+                "id": ident, "registration": ident, "label": "Demo district dispatch truck",
+            }))
+        for index in range(len(crew), DEMO_TRUCKS_PER_DISTRICT):
+            svc.drivers.append(crew[0].model_copy(update={
+                "id": f"demo-driver-{district['id']}-{index + 1}",
+                "name": f"Demo relief driver {district['name']} {index + 1}",
+            }))
 
 
 def _slot_rng(district_id: str, slot: int) -> random.Random:
