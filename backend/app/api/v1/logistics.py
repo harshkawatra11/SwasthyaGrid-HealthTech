@@ -4,7 +4,7 @@ import asyncio
 import hmac
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Header, Query
+from fastapi import APIRouter, Depends, Header, Query, Request
 from sse_starlette.sse import EventSourceResponse
 
 from app.api.deps import get_logistics_service, get_stream_hub
@@ -220,6 +220,26 @@ def planner_run(svc: Service):
 
 
 @router.get("/stream")
-async def stream(district_id: str | None = None):
+async def stream(request: Request, district_id: str | None = None):
+    key = request.query_params.get("demo_session")
+    if key:
+        from app.logistics.visits import visit_world
+
+        service = await asyncio.to_thread(get_logistics_service, request)
+        hub = (await asyncio.to_thread(visit_world, key))[1]
+        from app.logistics.stream import TickLoop
+
+        async def replay():
+            loop = TickLoop(service)
+            events = sse_events(hub, district_id)
+            loop.start()
+            try:
+                async for event in events:
+                    yield event
+            finally:
+                await events.aclose()
+                await loop.stop()
+
+        return EventSourceResponse(replay(), ping=15)
     hub = await asyncio.to_thread(get_stream_hub)  # first call boots the service
     return EventSourceResponse(sse_events(hub, district_id), ping=15)

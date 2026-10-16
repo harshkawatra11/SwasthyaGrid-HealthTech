@@ -16,6 +16,17 @@ export const API_BASE = apiBase();
 
 export const FETCH_TIMEOUT_MS = 6000;
 
+let visitId: string | undefined;
+
+/** One id per browser document: survives route changes, never a reload/new tab. */
+export function withDemoVisit(url: string): string {
+  if (typeof window === "undefined") return url;
+  visitId ??= crypto.randomUUID();
+  const target = new URL(url, window.location.origin);
+  target.searchParams.set("demo_session", visitId);
+  return target.toString();
+}
+
 /** status 0 means the request never got an HTTP response (network failure or timeout). */
 export class ApiError extends Error {
   readonly status: number;
@@ -60,7 +71,7 @@ export async function fetchJson<T>(path: string, init: FetchInit = {}): Promise<
     timedOut = true;
     ctrl.abort();
   }, timeoutMs);
-  const url = /^https?:\/\//.test(path) ? path : `${apiBase()}${path}`;
+  const url = withDemoVisit(/^https?:\/\//.test(path) ? path : `${apiBase()}${path}`);
   try {
     const res = await fetch(url, {
       cache: "no-store",

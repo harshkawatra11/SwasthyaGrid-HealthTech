@@ -3,7 +3,7 @@
 import { createContext, useContext, useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { mutate } from "swr";
 import type { LiveState } from "@/components/ds/LiveDot";
-import { apiBase, scopeQuery } from "@/lib/api/base";
+import { apiBase, scopeQuery, withDemoVisit } from "@/lib/api/base";
 import { invalidate } from "@/lib/api/mutations";
 import { useScope } from "@/lib/scope";
 import { createPositionsStore, type PositionsStore } from "./positions-store";
@@ -33,7 +33,7 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
   const stream = useMemo(
     () =>
       new LiveStream({
-        url: streamUrl(apiBase(), scope),
+        url: withDemoVisit(streamUrl(apiBase(), scope)),
         positions,
         invalidate,
         onKpis: (payload) => {

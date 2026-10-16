@@ -1,0 +1,37 @@
+"""Fresh visits replay independently; ordinary navigation keeps the same world."""
+
+from datetime import timedelta
+
+from fastapi.testclient import TestClient
+
+from app.logistics.visits import _visits, visit_world
+from app.main import app
+
+
+def test_visit_reuses_world_but_new_visitor_starts_fresh():
+    _visits.clear()
+    try:
+        first, _ = visit_world("first-visitor-123456")
+        start = first.now()
+        first.clock.reanchor(start + timedelta(hours=12))
+        again, _ = visit_world("first-visitor-123456")
+        second, _ = visit_world("second-visitor-12345")
+        assert again is first
+        assert second is not first
+        assert second.repo is not first.repo
+        assert second.now() < first.now() - timedelta(hours=11)
+        assert any(s.status in ("in_transit", "delayed") for s in second.active_shipments())
+    finally:
+        _visits.clear()
+
+
+def test_dispatch_endpoints_accept_visit_and_reject_invalid_id():
+    _visits.clear()
+    try:
+        client = TestClient(app)
+        query = "?demo_session=browser-document-12345"
+        assert client.get("/api/v1/logistics/clock" + query).status_code == 200
+        assert client.get("/api/v1/logistics/positions" + query).status_code == 200
+        assert client.get("/api/v1/logistics/clock?demo_session=bad").status_code == 400
+    finally:
+        _visits.clear()

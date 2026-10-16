@@ -1,5 +1,7 @@
 from functools import lru_cache
 
+from fastapi import Request
+
 from app.agents.health_agent import HealthAgent
 from app.core.config import get_settings
 from app.logistics.service import LogisticsService, build_logistics_service
@@ -53,11 +55,24 @@ def get_public_agent():
 
 
 @lru_cache
-def get_logistics_service() -> LogisticsService:
+def _default_logistics_service() -> LogisticsService:
     """Boots lazily on first call so module-level TestClient tests never need the lifespan."""
     service = _world()[1]
     service.boot()
     return service
+
+
+def get_logistics_service(request: Request = None) -> LogisticsService:
+    key = request.query_params.get("demo_session") if request is not None else None
+    if key:
+        from app.core.exceptions import ApiError
+        from app.logistics.visits import visit_world
+
+        try:
+            return visit_world(key)[0]
+        except ValueError as exc:
+            raise ApiError(400, str(exc), "invalid_demo_session") from exc
+    return _default_logistics_service()
 
 
 @lru_cache
