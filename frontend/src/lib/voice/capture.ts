@@ -28,8 +28,14 @@ export async function startMicCapture(onFrame: (b64: string) => void): Promise<M
     await ctx.audioWorklet.addModule("/worklets/pcm-recorder.js");
     const src = ctx.createMediaStreamSource(stream);
     const node = new AudioWorkletNode(ctx, "pcm-recorder");
+    // Browsers only pull the worklet reliably when its graph reaches a destination.
+    // Zero gain keeps microphone monitoring silent while the recorder processes PCM.
+    const silentSink = ctx.createGain();
+    silentSink.gain.value = 0;
     node.port.onmessage = (e: MessageEvent<ArrayBuffer>) => onFrame(bytesToB64(new Uint8Array(e.data)));
     src.connect(node);
+    node.connect(silentSink);
+    silentSink.connect(ctx.destination);
     attachMicAnalyser(ctx, src);
     const owned = ctx;
     return {
@@ -41,6 +47,8 @@ export async function startMicCapture(onFrame: (b64: string) => void): Promise<M
       },
       stop() {
         node.port.onmessage = null;
+        node.disconnect();
+        silentSink.disconnect();
         stream.getTracks().forEach((t) => t.stop());
         void owned.close().catch(() => undefined);
       },
