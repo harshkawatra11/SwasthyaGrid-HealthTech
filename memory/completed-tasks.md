@@ -50,3 +50,7 @@
 - Added deployment scaffolding: multi-stage Dockerfile (non-root), docker-compose, `setup_secrets.sh`/`deploy.sh`/`setup_firestore.py` scripts, and a GitHub Actions CI/CD workflow (lint → test → build, deploy stage commented out pending GCP project provisioning).
 - Wrote a judge-facing README with badges, architecture diagram, and design rationale.
 - Committed at 5 checkpoints and pushed all but the CI/CD workflow file, which is blocked on a `gh` OAuth `workflow` scope grant (device-code flow not completed by user during session — see [[next-tasks]]).
+
+
+## 2026-10-17 — Sarvam voice capture and playback
+Sarvam credentials and upstream STT/chat/TTS work. Fixed microphone recorder rendering via a silent destination sink (3ddf526), unlocked playback during the initiating user gesture, and selected CSS orb on software WebGL renderers to prevent capture starvation (b0b71f6). No keys changed. Vercel production deployment and GitHub frontend/backend CI succeeded. 48 focused tests and TypeScript checks passed. Live strict-autoplay Chromium test with synthetic microphone speech: 219 outgoing audio frames, correct transcript “Which district needs attention first?”, 53 received/scheduled reply chunks, nonzero output peak 0.9966, both audio contexts running, no voice errors. Browser output verified programmatically; physical speaker settings remain device-specific. See docs/voice-microphone-capture-fix.md.

@@ -28,3 +28,7 @@ See `memory/next-tasks.md` for the full backlog — nothing blocking for the dem
 
 ## GCP project reference
 Project `swasthyagrid-ai-54886`, region `asia-south1`, billing account `010FBB-4DDDDA-4656C5`. Firestore is now load-bearing for **both** apps — tearing down the project (`gcloud projects delete swasthyagrid-ai-54886`) takes down the CRM's data too, not just the backend.
+
+
+## 2026-10-17 — Sarvam voice capture and playback
+Sarvam credentials and upstream STT/chat/TTS work. Fixed microphone recorder rendering via a silent destination sink (3ddf526), unlocked playback during the initiating user gesture, and selected CSS orb on software WebGL renderers to prevent capture starvation (b0b71f6). No keys changed. Vercel production deployment and GitHub frontend/backend CI succeeded. 48 focused tests and TypeScript checks passed. Live strict-autoplay Chromium test with synthetic microphone speech: 219 outgoing audio frames, correct transcript “Which district needs attention first?”, 53 received/scheduled reply chunks, nonzero output peak 0.9966, both audio contexts running, no voice errors. Browser output verified programmatically; physical speaker settings remain device-specific. See docs/voice-microphone-capture-fix.md.

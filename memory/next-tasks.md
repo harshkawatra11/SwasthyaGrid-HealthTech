@@ -25,3 +25,5 @@
 - SMS/WhatsApp intake, Cloud Translation, Speech-to-Text voice entry
 - Firebase Auth migration for the CRM
 - Multilingual i18n
+
+- Sarvam audio follow-up (2026-10-17): deployed and verified end-to-end. If sound is still absent on a particular device after refreshing, inspect site sound permission, tab mute, output device and browser version; do not rotate working provider credentials.

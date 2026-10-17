@@ -19,3 +19,7 @@ Implemented a browser-document demo identifier shared by REST and SSE. Backend l
 Delivered: `(dashboard)` route group, sidebar+topbar shell, 10 routed pages, role switcher, API client with mock fallback, lifted recommendation state, live risk-downgrade on approval, and premium UX primitives (toast/drawer/skeleton/empty-state/⌘K palette). Verified in-browser against the live backend. `npm run build` passes.
 
 Next session should start from [[next-tasks]] and [[handoff]].
+
+
+## 2026-10-17 — Sarvam voice capture and playback
+Sarvam credentials and upstream STT/chat/TTS work. Fixed microphone recorder rendering via a silent destination sink (3ddf526), unlocked playback during the initiating user gesture, and selected CSS orb on software WebGL renderers to prevent capture starvation (b0b71f6). No keys changed. Vercel production deployment and GitHub frontend/backend CI succeeded. 48 focused tests and TypeScript checks passed. Live strict-autoplay Chromium test with synthetic microphone speech: 219 outgoing audio frames, correct transcript “Which district needs attention first?”, 53 received/scheduled reply chunks, nonzero output peak 0.9966, both audio contexts running, no voice errors. Browser output verified programmatically; physical speaker settings remain device-specific. See docs/voice-microphone-capture-fix.md.
