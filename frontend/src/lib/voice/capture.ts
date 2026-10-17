@@ -11,7 +11,7 @@ export interface MicCapture {
 
 /** Opens the microphone, runs the PCM16 worklet at 16 kHz and reports about
  *  100 ms frames as base64. The source also feeds an analyser for the orb; it
- *  is never connected to the destination, so the officer is not echoed back.
+ *  reaches the destination only through a zero-gain sink, so there is no echo.
  *  Must run inside a user gesture or the AudioContext starts suspended. */
 export async function startMicCapture(onFrame: (b64: string) => void): Promise<MicCapture> {
   const stream = await navigator.mediaDevices.getUserMedia({

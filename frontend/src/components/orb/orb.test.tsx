@@ -30,6 +30,19 @@ afterEach(() => {
 });
 
 describe("OrbStage fallback", () => {
+  it("uses the CSS orb on software renderers and releases the probe context", () => {
+    mockMatchMedia(false);
+    const loseContext = vi.fn();
+    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue({
+      getExtension: (name: string) => name === "WEBGL_debug_renderer_info"
+        ? { UNMASKED_RENDERER_WEBGL: 37446 } : { loseContext },
+      getParameter: () => "ANGLE (Google, Vulkan SwiftShader Device)",
+    } as unknown as RenderingContext);
+    render(<OrbStage phase="listening" />);
+    expect(screen.getByTestId("orb-fallback")).toBeInTheDocument();
+    expect(screen.queryByTestId("glass-canvas")).toBeNull();
+    expect(loseContext).toHaveBeenCalled();
+  });
   it("renders the CSS orb under reduced motion and never mounts the canvas", () => {
     mockMatchMedia(true);
     // Even with WebGL2 available, reduced motion wins.

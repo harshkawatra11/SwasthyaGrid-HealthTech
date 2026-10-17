@@ -49,6 +49,7 @@ class FakePlayback implements PlaybackLike {
   stopCalls = 0;
   closed = false;
   constructor(readonly hooks: PlaybackHooks) {}
+  resume = vi.fn(async () => {});
   enqueueWavBase64(b64: string) {
     this.wav.push(b64);
     this.stats.enqueued += 1;
@@ -122,6 +123,10 @@ afterEach(() => {
 });
 
 describe("connection", () => {
+  it("unlocks spoken output immediately before the WebSocket connects", async () => {
+    const r = await rig({ mic: false });
+    expect(r.playback().resume).toHaveBeenCalledTimes(1);
+  });
   it("sends a v2 hello and reports connected", async () => {
     const { client, socket } = await rig();
     expect(socket.sent[0]).toEqual({ t: "hello", language: "auto", scope: null, mode: "handsfree", protocol: 2 });

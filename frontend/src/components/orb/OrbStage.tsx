@@ -19,7 +19,16 @@ function detectGlassCapable(): boolean {
   if (capabilityCache !== null) return capabilityCache;
   let ok = true;
   try {
-    ok = !!document.createElement("canvas").getContext("webgl2") && !(navigator.hardwareConcurrency < 4);
+    const gl = document.createElement("canvas").getContext("webgl2");
+    ok = !!gl && !(navigator.hardwareConcurrency < 4);
+    if (gl) {
+      const info = gl.getExtension?.("WEBGL_debug_renderer_info");
+      const renderer = info ? String(gl.getParameter(info.UNMASKED_RENDERER_WEBGL)) : "";
+      // Software rendering can starve AudioWorklet startup. Keep voice usable
+      // with the existing CSS orb rather than competing for the same CPU.
+      if (/swiftshader|llvmpipe|softpipe|software|microsoft basic render/i.test(renderer)) ok = false;
+      gl.getExtension?.("WEBGL_lose_context")?.loseContext();
+    }
   } catch {
     ok = false;
   }

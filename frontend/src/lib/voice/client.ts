@@ -53,6 +53,7 @@ export interface PlaybackLike {
   readonly isPlaying: boolean;
   readonly pending: number;
   readonly stats: { enqueued: number; scheduled: number; discarded: number };
+  resume(): Promise<void>;
   enqueueWavBase64(b64: string): void;
   enqueuePcm16(b64: string, sampleRate: number): void;
   stopAll(): void;
@@ -221,6 +222,11 @@ export class VoiceClient {
       onIdle: () => this.onPlaybackIdle(),
     });
     orbAudio.ttsAnalyser = this.playback.analyser;
+    // Unlock output in the initiating click, not seconds later when TTS arrives.
+    // Browsers with strict autoplay policies otherwise leave replies suspended.
+    void this.playback.resume().catch(() => {
+      if (this.ws === ws) this.set({ errorMessage: "Audio playback is blocked. End the session and start it again to enable sound." });
+    });
 
     this.connectTimer = setTimeout(() => {
       if (this.opened || this.ws !== ws) return;
